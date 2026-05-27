@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AetherCards | 極光單字卡</title>
+    <!-- Google Fonts: Noto Sans TC (中文) & Outfit (英文與數字，質感圓潤現代) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- 背景動態極光光暈效果 -->
+    <div class="aurora-bg">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- 電腦端：左側毛玻璃導覽列 (Sidebar) -->
+        <aside class="sidebar" id="app-sidebar">
+            <div class="sidebar-brand">
+                <svg class="logo-icon" viewBox="0 0 24 24" width="28" height="28">
+                    <defs>
+                        <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="var(--primary-glow)" />
+                            <stop offset="100%" stop-color="var(--accent-glow)" />
+                        </linearGradient>
+                    </defs>
+                    <path fill="url(#logo-grad)" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+                <span class="brand-text">AetherCards</span>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <button class="nav-btn active" data-view="dashboard" id="nav-dash">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                    學習大廳
+                </button>
+                <button class="nav-btn" data-view="decks" id="nav-decks">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+                    我的字卡夾
+                </button>
+                <button class="nav-btn" data-view="settings" id="nav-settings">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                    備份與設定
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="streak-badge">
+                    <svg viewBox="0 0 24 24" width="22" height="22" class="streak-fire-icon"><path fill="currentColor" d="M12 2.69c.39 1 .84 2.09 1.28 3.19.45-1 .9-2.09 1.34-3.19C17.79 4.3 20 7.8 20 11c0 4.42-3.58 8-8 8s-8-3.58-8-8c0-3.2 2.21-6.7 5.38-8.31.44 1.1.89 2.19 1.34 3.19.45-1.1.9-2.2 1.28-3.19zM12 17c2.76 0 5-2.24 5-5 0-2.3-1.6-4.5-3.8-5.3-.2.4-.4.8-.6 1.3-.8-1-1.6-2-2.3-3.1-.7 1.1-1.5 2.1-2.3 3.1-.2-.5-.4-.9-.6-1.3C5.2 7.5 3.6 9.7 3.6 12c0 2.76 2.24 5 5 5h3.4z"/></svg>
+                    <span class="streak-text">連勝紀錄：<strong id="sidebar-streak-num">0</strong> 天</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 手機端：底部毛玻璃導覽列 (Bottom Navigation Bar) -->
+        <nav class="mobile-nav" id="app-mobile-nav">
+            <button class="mobile-nav-btn active" data-view="dashboard" id="mob-nav-dash">
+                <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                <span>大廳</span>
+            </button>
+            <button class="mobile-nav-btn" data-view="decks" id="mob-nav-decks">
+                <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+                <span>字卡夾</span>
+            </button>
+            <button class="mobile-nav-btn" data-view="settings" id="mob-nav-settings">
+                <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                <span>設定</span>
+            </button>
+        </nav>
+
+        <!-- 主內容顯示區域 -->
+        <main class="main-content">
+            
+            <!-- VIEW 1: 學習大廳 (Dashboard) -->
+            <section class="app-view active" id="view-dashboard">
+                <div class="view-header">
+                    <h1>學習大廳</h1>
+                    <p class="subtitle">歡迎回來，今天也是提升自我的好日子！</p>
+                </div>
+
+                <!-- 統計數據面板 -->
+                <div class="stats-grid">
+                    <div class="glass-card stat-card border-glow">
+                        <div class="stat-icon-wrapper p-color">
+                            <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">單字總數</span>
+                            <span class="stat-value" id="stats-total-cards">0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="glass-card stat-card border-glow">
+                        <div class="stat-icon-wrapper s-color">
+                            <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">已掌握單字</span>
+                            <span class="stat-value" id="stats-mastered-cards">0</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-card stat-card border-glow">
+                        <div class="stat-icon-wrapper a-color">
+                            <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2zm0 18c4.42 0 8-3.58 8-8s-3.58-8-8-8-8 3.58-8 8 3.58 8 8 8zm1-13h-2v6h5v-2h-3V7z"/></svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">總複習次數</span>
+                            <span class="stat-value" id="stats-total-reviews">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快速建立字卡夾與最近學習 -->
+                <div class="dashboard-sections">
+                    <div class="section-title-row">
+                        <h2>我的字卡夾</h2>
+                        <button class="btn btn-primary btn-sm" id="btn-create-deck-dash">
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                            新建字卡夾
+                        </button>
+                    </div>
+                    
+                    <div class="decks-grid" id="dashboard-decks-list">
+                        <!-- 動態渲染的字卡夾卡片 -->
+                        <div class="empty-state">
+                            <p>尚未建立字卡夾，立即點擊「新建字卡夾」開始吧！</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 2: 我的字卡夾 (Decks View) -->
+            <section class="app-view" id="view-decks">
+                <div class="view-header-row">
+                    <div class="view-header">
+                        <h1>我的字卡夾</h1>
+                        <p class="subtitle">在此建立、整理與搜尋您的單字庫。</p>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button class="btn btn-secondary" id="btn-trigger-import-single">
+                            <svg viewBox="0 0 24 24" width="18" height="18" style="margin-right: 4px; vertical-align: middle;"><path fill="currentColor" d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                            匯入分享字卡夾
+                        </button>
+                        <button class="btn btn-primary" id="btn-create-deck">
+                            <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                            新增字卡夾
+                        </button>
+                        <input type="file" id="import-single-file-input" accept=".json" style="display: none;">
+                    </div>
+                </div>
+
+                <div class="decks-filter-row">
+                    <div class="search-bar-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                        <input type="text" id="decks-search" placeholder="搜尋字卡夾...">
+                    </div>
+                </div>
+
+                <div class="decks-grid" id="manager-decks-list">
+                    <!-- 動態載入字卡夾 -->
+                </div>
+            </section>
+
+            <!-- VIEW 3: 字卡夾詳情頁 (Deck Detail View) -->
+            <section class="app-view" id="view-deck-detail">
+                <div class="detail-header-card glass-card border-glow" id="detail-header-panel">
+                    <button class="btn-back" id="btn-back-to-decks">
+                        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                        返回列表
+                    </button>
+                    <div class="deck-title-area">
+                        <h2 id="detail-deck-name">字卡夾名稱</h2>
+                        <p id="detail-deck-desc">描述資訊</p>
+                    </div>
+                    
+                    <div class="deck-actions-grid">
+                        <button class="btn btn-action p-bg" id="btn-start-study">
+                            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+                            翻字卡
+                        </button>
+                        <button class="btn btn-action s-bg" id="btn-start-quiz">
+                            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                            測驗
+                        </button>
+                        <button class="btn btn-action-outline" id="btn-edit-deck-structure">
+                            編輯/新增字卡
+                        </button>
+                        <button class="btn btn-action-outline" id="btn-share-deck" style="color: var(--primary-glow);">
+                            <svg viewBox="0 0 24 24" width="18" height="18" style="margin-right: 4px; vertical-align: middle;"><path fill="currentColor" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                            分享此字卡夾
+                        </button>
+                        <button class="btn btn-action-outline btn-danger-hover" id="btn-delete-deck" style="color: var(--error-glow);">
+                            刪除此字卡夾
+                        </button>
+                    </div>
+                </div>
+
+                <div class="section-title-row">
+                    <h3>單字卡清單 (<span id="detail-cards-count">0</span>)</h3>
+                    <div class="search-bar-wrapper search-sm">
+                        <input type="text" id="cards-search" placeholder="搜尋此字卡夾內的單字...">
+                    </div>
+                </div>
+
+                <div class="cards-list-grid" id="deck-cards-list">
+                    <!-- 動態載入單字卡清單 -->
+                </div>
+            </section>
+
+            <!-- VIEW 4: Quizlet 式超級編輯器 (Creator View) -->
+            <section class="app-view" id="view-creator">
+                <div class="view-header-row">
+                    <div class="view-header">
+                        <h1>編輯字卡夾</h1>
+                        <p class="subtitle">手動極速新增單字卡，支援鍵盤 Tab 鍵流暢操作。</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" id="btn-cancel-edit">取消</button>
+                        <button class="btn btn-primary" id="btn-save-deck">儲存字卡夾</button>
+                    </div>
+                </div>
+
+                <!-- 字卡夾名稱與描述填寫 -->
+                <div class="glass-card editor-info-card border-glow">
+                    <div class="form-group">
+                        <label for="editor-deck-name">字卡夾名稱 *</label>
+                        <input type="text" id="editor-deck-name" placeholder="例如：日常實用多益單字" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editor-deck-desc">描述說明</label>
+                        <input type="text" id="editor-deck-desc" placeholder="例如：收錄多益考試最常見的 100 個高頻核心單字">
+                    </div>
+                    <div class="form-group">
+                        <label>自訂主題漸層</label>
+                        <div class="theme-selector" id="deck-theme-picker">
+                            <button class="theme-dot active" data-theme="grad-aurora" style="background: var(--grad-aurora)"></button>
+                            <button class="theme-dot" data-theme="grad-sunset" style="background: var(--grad-sunset)"></button>
+                            <button class="theme-dot" data-theme="grad-ocean" style="background: var(--grad-ocean)"></button>
+                            <button class="theme-dot" data-theme="grad-cosmic" style="background: var(--grad-cosmic)"></button>
+                            <button class="theme-dot" data-theme="grad-forest" style="background: var(--grad-forest)"></button>
+                            <button class="theme-dot" data-theme="grad-cyber" style="background: var(--grad-cyber)"></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 編輯器卡片列表區 -->
+                <div class="editor-cards-section">
+                    <div class="editor-cards-header">
+                        <h3>卡片內容編輯</h3>
+                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                            <button class="btn btn-secondary btn-sm" id="btn-creator-batch-import" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">⚡ 批次匯入單字</button>
+                            <div class="autopilot-toggle-wrapper" style="display: flex; gap: 1rem; align-items: center;">
+                                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                    <input type="checkbox" id="toggle-autopilot" checked>
+                                    <label for="toggle-autopilot" style="font-size: 0.82rem; cursor: pointer; white-space: nowrap;">
+                                        <span class="badge badge-ai">AI Autopilot</span> 自動配圖
+                                    </label>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                    <input type="checkbox" id="toggle-autotranslate" checked>
+                                    <label for="toggle-autotranslate" style="font-size: 0.82rem; cursor: pointer; white-space: nowrap;">
+                                        <span class="badge badge-ai" style="background: var(--accent-glow); color: #fff;">AI 智慧翻譯</span> 自動翻譯
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="editor-rows-container" id="editor-rows-list">
+                        <!-- 動態插入單字行 -->
+                    </div>
+
+                    <button class="btn btn-outline-dashed btn-block" id="btn-editor-add-row">
+                        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        新增一行單字 (按 Tab 可自動新增)
+                    </button>
+                </div>
+            </section>
+
+            <!-- VIEW 5: 批次匯入面板 (Importer View) -->
+            <section class="app-view" id="view-importer">
+                <div class="view-header">
+                    <h1>智慧型批次匯入單字</h1>
+                    <p class="subtitle">直接貼上您整段筆記、Excel 或 CSV 內容，快速解析並批量配圖。</p>
+                </div>
+
+                <div class="glass-card importer-card border-glow">
+                    <div class="form-group">
+                        <label for="import-text">貼上單字內容：</label>
+                        <textarea id="import-text" rows="8" placeholder="貼上格式例如：&#10;apple - 蘋果&#10;banana - 香蕉&#10;cherry - 櫻桃&#10;&#10;或者（用逗號隔開）：&#10;dog, 狗&#10;cat, 貓"></textarea>
+                    </div>
+
+                    <div class="import-controls">
+                        <div class="form-group sm">
+                            <label for="import-separator">分隔符號設定：</label>
+                            <select id="import-separator">
+                                <option value="auto">自動偵測分隔符 (破折號、逗號、Tab、冒號)</option>
+                                <option value="dash">破折號 ( - )</option>
+                                <option value="comma">半形/全形逗號 ( , 或 ， )</option>
+                                <option value="colon">冒號 ( : 或 ： )</option>
+                                <option value="tab">定位鍵 ( Tab )</option>
+                            </select>
+                        </div>
+
+                        <div class="autopilot-toggle-wrapper">
+                            <input type="checkbox" id="import-toggle-autopilot" checked>
+                            <label for="import-toggle-autopilot">
+                                <span class="badge badge-ai">AI Autopilot</span> 匯入時背景自動尋圖
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" id="btn-cancel-import">取消</button>
+                        <button class="btn btn-primary" id="btn-preview-import">開始解析預覽</button>
+                    </div>
+                </div>
+
+                <!-- 匯入預覽區 -->
+                <div class="import-preview-section" id="import-preview-box" style="display: none;">
+                    <h3>解析預覽 (<span id="import-preview-count">0</span>)</h3>
+                    <div class="glass-card preview-table-card border-glow">
+                        <table class="preview-table">
+                            <thead>
+                                <tr>
+                                    <th>正面 (單字)</th>
+                                    <th>反面 (解釋)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="import-preview-tbody">
+                                <!-- 解析資料 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <button class="btn btn-primary btn-block mt-3" id="btn-execute-import">確認匯入此字卡夾</button>
+                </div>
+            </section>
+
+            <!-- VIEW 6: 翻字卡模式 (Study View) -->
+            <section class="app-view" id="view-study">
+                <div class="study-header">
+                    <button class="btn-back" id="btn-quit-study">
+                        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                        退出學習
+                    </button>
+                    <div class="study-progress-container" style="max-width: 420px;">
+                        <span class="study-counter"><span id="study-current-idx">1</span> / <span id="study-total-count">0</span></span>
+                        <div class="progress-track">
+                            <div class="progress-bar-fill" id="study-progress-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <label class="autopilot-toggle-wrapper" style="font-size: 0.82rem; white-space: nowrap; gap: 0.25rem; cursor: pointer; display: flex; align-items: center;">
+                            <input type="checkbox" id="toggle-study-shuffle" checked style="width:15px; height:15px;">
+                            <span>🔀 隨機字卡</span>
+                        </label>
+                        <label class="autopilot-toggle-wrapper" style="font-size: 0.82rem; white-space: nowrap; gap: 0.25rem; cursor: pointer; display: flex; align-items: center;">
+                            <input type="checkbox" id="toggle-auto-tts" checked style="width:15px; height:15px;">
+                            <span>🗣️ 朗讀單字</span>
+                        </label>
+                        <label class="autopilot-toggle-wrapper" style="font-size: 0.82rem; white-space: nowrap; gap: 0.25rem; cursor: pointer; display: flex; align-items: center;">
+                            <input type="checkbox" id="toggle-auto-tts-back" checked style="width:15px; height:15px;">
+                            <span>🗣️ 翻牌意思</span>
+                        </label>
+                        <label class="autopilot-toggle-wrapper" style="font-size: 0.82rem; white-space: nowrap; gap: 0.25rem; cursor: pointer; display: flex; align-items: center;">
+                            <input type="checkbox" id="toggle-def-front" style="width:15px; height:15px;">
+                            <span>🔄 正面是意思</span>
+                        </label>
+                        <button class="sound-toggle-btn" id="btn-study-sound" title="切換音效">
+                            <svg viewBox="0 0 24 24" width="20" height="20" class="sound-icon-on"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 學習運作中區塊 -->
+                <div id="study-active-box" style="width: 100%;">
+                    <!-- 複習核心：Tinder 3D 疊加卡片容器 -->
+                    <div class="study-card-stack">
+                        <!-- 底層預覽卡片 -->
+                        <div class="flashcard-face flashcard-next-preview glass-card" id="flashcard-next-preview" style="display: none;">
+                            <div class="card-content-wrapper">
+                                <h2 class="card-term" id="study-next-preview-term">Next Word</h2>
+                            </div>
+                        </div>
+
+                        <!-- 頂層可操作卡片 -->
+                        <div class="flashcard-scene" id="interactive-card-scene">
+                            <div class="flashcard-wrapper" id="flashcard-element">
+                                <!-- 卡片正面 -->
+                                <div class="flashcard-face flashcard-front glass-card">
+                                    <span class="card-side-tag">正面</span>
+                                    <div class="card-content-wrapper">
+                                        <div style="display: flex; align-items: center; gap: 0.75rem; justify-content: center; width: 100%;">
+                                            <h2 class="card-term" id="study-card-front-term" style="margin-left: 36px;">Word</h2>
+                                            <button class="btn-tts" id="btn-tts-front" title="朗讀單字" style="background: transparent; border: none; color: var(--text-sub); cursor: pointer; transition: var(--transition-smooth); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;" onclick="event.stopPropagation()">
+                                                <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                                            </button>
+                                        </div>
+                                        <p class="card-phonetic" id="study-card-front-hint"></p>
+                                    </div>
+                                    <span class="card-action-tip">點擊或按空白鍵翻面</span>
+                                </div>
+                                <!-- 卡片反面 -->
+                                <div class="flashcard-face flashcard-back glass-card">
+                                    <span class="card-side-tag">反面</span>
+                                    <div class="card-content-wrapper">
+                                        <!-- AI 圖片渲染容器 -->
+                                        <div class="card-image-container" id="study-card-image-box" style="display: none;">
+                                            <img src="" id="study-card-image" alt="單字插圖">
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 0.75rem; justify-content: center; width: 100%;">
+                                            <h3 class="card-definition" id="study-card-back-def" style="margin-left: 36px;">Definition</h3>
+                                            <button class="btn-tts" id="btn-tts-back" title="朗讀翻譯" style="background: transparent; border: none; color: var(--text-sub); cursor: pointer; transition: var(--transition-smooth); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;" onclick="event.stopPropagation()">
+                                                <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                                            </button>
+                                        </div>
+                                        <p class="card-example" id="study-card-back-example"></p>
+                                    </div>
+                                    <span class="card-action-tip">點擊或按空白鍵翻回正面</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 電腦快捷鍵提示 -->
+                    <div class="keyboard-shortcuts-helper">
+                        <span>快捷鍵：[空白鍵] 翻牌 | [←/→ 方向鍵] 切換 | [1] 需複習 | [2] 已掌握</span>
+                    </div>
+
+                    <!-- 複習評估操作按鈕 (雙端大點擊區) -->
+                    <div class="study-evaluation-buttons">
+                        <button class="btn-eval eval-red" id="btn-study-again">
+                            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+                            <span>需複習 (1)</span>
+                        </button>
+                        <button class="btn-eval eval-green" id="btn-study-gotit">
+                            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                            <span>已掌握 (2)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 學習結束後的選擇畫面 (新設計) -->
+                <div id="study-end-box" style="display: none; width: 100%; max-width: 580px; margin: 1rem auto 2rem auto;">
+                    <div class="glass-card result-card border-glow text-center" style="padding: 2.5rem 2rem;">
+                        <div class="result-celebration" style="font-size: 3.5rem; margin-bottom: 0.5rem;">🎉</div>
+                        <h2 style="font-size: 1.6rem; margin-bottom: 0.5rem; font-weight: 800;">這一輪複習看完了！</h2>
+                        <p class="subtitle" style="margin-bottom: 1.5rem;">您已看完了字卡夾中的所有單字。接下來您想要：</p>
+                        
+                        <!-- 剩餘未掌握單字統計 -->
+                        <div class="result-details" style="margin-bottom: 2rem; width: 100%;">
+                            <p style="margin-bottom: 0.35rem; display: flex; justify-content: space-between;"><span>字卡夾單字總數：</span><strong id="study-end-total-count">0</strong></p>
+                            <p style="display: flex; justify-content: space-between;"><span>標記為「需複習」單字：</span><strong style="color: var(--error-glow); font-size: 1.15rem;" id="study-end-wrong-count">0</strong></p>
+                        </div>
+
+                        <div class="deck-actions-grid" style="grid-template-columns: 1fr; width: 100%; gap: 0.75rem;">
+                            <button class="btn btn-action p-bg" id="btn-study-review-wrong">
+                                繼續複習剛剛「需複習」的單字 (<span id="study-btn-wrong-num">0</span>)
+                            </button>
+                            <button class="btn btn-action s-bg" id="btn-study-review-all">
+                                重新複習整個字卡夾
+                            </button>
+                            <button class="btn btn-action-outline" id="btn-study-end-exit">
+                                結束複習並返回
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 7: 拼寫測驗挑戰 (Quiz View) -->
+            <section class="app-view" id="view-quiz">
+                <div class="quiz-header">
+                    <button class="btn-back" id="btn-quit-quiz">
+                        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                        退出測驗
+                    </button>
+                    <div class="quiz-progress-info">
+                        <span>正確率：<strong id="quiz-correct-rate">100%</strong> (<span id="quiz-score-num">0</span>/<span id="quiz-answered-count">0</span>)</span>
+                        <div class="quiz-progress-track">
+                            <div class="quiz-progress-bar" id="quiz-progress-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quiz-container" id="quiz-question-box">
+                    <div class="glass-card quiz-card border-glow" id="quiz-card-wrapper">
+                        <span class="quiz-cue-tag">請拼寫此單字：</span>
+                        
+                        <!-- AI 插圖提示區 -->
+                        <div class="quiz-image-box" id="quiz-image-container" style="display: none;">
+                            <img src="" id="quiz-image" alt="單字插圖">
+                        </div>
+
+                        <div class="quiz-cues">
+                            <h2 class="quiz-definition" id="quiz-cue-def">中文解釋載入中...</h2>
+                            <p class="quiz-example" id="quiz-cue-example"></p>
+                        </div>
+
+                        <!-- 輸入框與提交按鈕 -->
+                        <form class="quiz-input-form" id="quiz-submit-form" autocomplete="off">
+                            <input type="text" id="quiz-user-input" placeholder="請在此輸入英文單字..." autofocus required>
+                            <button type="submit" class="btn btn-primary" id="btn-submit-answer">提交答案</button>
+                            <button type="button" class="btn btn-primary" id="btn-next-quiz" style="display: none; white-space: nowrap;">下一題 (Enter)</button>
+                        </form>
+
+                        <div class="quiz-feedback-banner" id="quiz-feedback-box" style="display: none;">
+                            <span id="quiz-feedback-text">答對了！🎉</span>
+                            <span id="quiz-correct-answer-text" style="display: none;">正確答案：<strong class="highlight">word</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 測驗完成統計畫面 -->
+                <div class="quiz-result-screen" id="quiz-result-box" style="display: none;">
+                    <div class="glass-card result-card border-glow text-center">
+                        <div class="result-celebration">🏆</div>
+                        <h2>測驗挑戰完成！</h2>
+                        <p class="result-score-text">您獲得了 <strong id="result-score-percent">0%</strong> 的正確率</p>
+                        <div class="result-details">
+                            <p>答對題數：<span id="result-correct-count">0</span> / <span id="result-total-count">0</span></p>
+                            <p>連續答對最高紀錄：<span id="result-max-combo">0</span></p>
+                        </div>
+                        
+                        <!-- 錯字清單自動排程 -->
+                        <div class="wrong-words-panel" id="result-wrong-list-panel" style="display: none;">
+                            <h4>答錯的單字（已自動加入複習隊列）：</h4>
+                            <ul class="wrong-words-ul" id="result-wrong-ul">
+                                <!-- 動態填入錯字 -->
+                            </ul>
+                        </div>
+
+                        <button class="btn btn-primary btn-block mt-3" id="btn-restart-quiz">再挑戰一次</button>
+                        <button class="btn btn-secondary btn-block mt-2" id="btn-result-exit">返回字卡夾</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 9: 趣味連連看配對遊戲 (Match View) -->
+            <section class="app-view" id="view-match">
+                <div class="quiz-header" style="margin-bottom: 1.5rem;">
+                    <button class="btn-back" id="btn-quit-match">
+                        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                        退出遊戲
+                    </button>
+                    <div class="match-timer-container" style="background: rgba(15,23,42,0.05); border: 1.5px solid var(--border-glass); padding: 0.5rem 1rem; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; gap: 0.25rem;">
+                        <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-sub);">計時器：<strong id="match-timer-text" style="font-family: 'Outfit'; font-size: 1.15rem; color: var(--primary-glow); font-weight: 700;">0.0s</strong></span>
+                    </div>
+                </div>
+
+                <!-- 遊戲主網格 -->
+                <div id="match-active-box" style="width: 100%;">
+                    <div class="match-grid" id="match-grid-board">
+                        <!-- 動態填充 8 張卡片 (4對) -->
+                    </div>
+                </div>
+
+                <!-- 挑戰完成統計畫面 -->
+                <div class="quiz-result-screen" id="match-result-box" style="display: none; width: 100%; max-width: 580px; margin: 1rem auto 2rem auto;">
+                    <div class="glass-card result-card border-glow text-center" style="padding: 2.5rem 2rem;">
+                        <div class="result-celebration" style="font-size: 3.5rem; margin-bottom: 0.5rem;">⚡</div>
+                        <h2 style="font-size: 1.6rem; margin-bottom: 0.5rem; font-weight: 800;">挑戰成功！</h2>
+                        <p class="result-score-text" style="font-size: 1.2rem; margin-bottom: 1.5rem; color: var(--primary-glow);">所花時間：<strong id="match-result-time" style="font-size: 1.8rem; font-weight: 800; font-family: 'Outfit';">0.00</strong> 秒</p>
+                        
+                        <div class="deck-actions-grid" style="grid-template-columns: 1fr; width: 100%; gap: 0.75rem;">
+                            <button class="btn btn-action p-bg" id="btn-restart-match">再玩一次</button>
+                            <button class="btn btn-action-outline" id="btn-match-result-exit">返回字卡夾</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 8: 備份與設定 (Settings View) -->
+            <section class="app-view" id="view-settings">
+                <div class="view-header">
+                    <h1>備份與設定</h1>
+                    <p class="subtitle">管理您的本地儲存庫、資料匯出與音效喜好。</p>
+                </div>
+
+                <div class="settings-grid">
+                    <!-- 資料備份板塊 -->
+                    <div class="glass-card settings-card border-glow">
+                        <h3>📥 資料備份與同步</h3>
+                        <p class="settings-desc">您可以將手機本地的所有字卡夾、複習記錄與 AI 本地壓縮圖片打包成一個備份檔案，方便傳送到電腦或其他手機上復原。</p>
+                        
+                        <div class="settings-actions">
+                            <button class="btn btn-primary" id="btn-export-data">
+                                <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                                匯出備份檔案 (JSON)
+                            </button>
+                            
+                            <div class="file-input-wrapper">
+                                <button class="btn btn-outline" id="btn-trigger-import">
+                                    <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                                    匯入備份檔案
+                                </button>
+                                <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 聲音設定板塊 -->
+                    <div class="glass-card settings-card border-glow">
+                        <h3>🔊 學習音效設定</h3>
+                        <p class="settings-desc">在複習卡片、測驗答對或答錯時，使用瀏覽器 Web Audio API 自動合成逼真的學習音效。</p>
+                        
+                        <div class="setting-toggle-row">
+                            <span>啟用音效反饋</span>
+                            <label class="switch-toggle">
+                                <input type="checkbox" id="setting-sound-enabled" checked>
+                                <span class="slider-round"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 資料清理板塊 -->
+                    <div class="glass-card settings-card border-glow border-danger">
+                        <h3 class="text-danger">⚠️ 危險區域</h3>
+                        <p class="settings-desc">清除所有儲存於 IndexedDB 資料庫中的單字卡、字卡夾以及所有 AI 本地壓縮圖片，此動作無法復原！</p>
+                        
+                        <button class="btn btn-danger mt-3" id="btn-danger-clear">
+                            <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            刪除本地全部資料
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 彈出視窗過載 (Modal/Overlays) -->
+    <!-- 新增/編輯字卡夾 Dialog -->
+    <div class="modal-overlay" id="deck-modal">
+        <div class="modal-card glass-card border-glow">
+            <h3 id="deck-modal-title">新建字卡夾</h3>
+            <form id="deck-modal-form">
+                <div class="form-group">
+                    <label for="deck-name-input">字卡夾名稱 *</label>
+                    <input type="text" id="deck-name-input" placeholder="例如：TOEIC 必考 200 字" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="deck-desc-input">描述</label>
+                    <input type="text" id="deck-desc-input" placeholder="對這個字卡夾的補充說明..." autocomplete="off">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-close-deck-modal">取消</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-deck-modal">建立</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 編輯器專用批次匯入 Dialog -->
+    <div class="modal-overlay" id="creator-import-modal">
+        <div class="modal-card glass-card border-glow" style="max-width: 560px;">
+            <h3>⚡ 智慧型批次匯入單字</h3>
+            <p class="subtitle" style="margin-bottom: 0.75rem;">貼上多行文字，系統會將它們解析並附加在目前清單下方。</p>
+            <div class="form-group" style="margin-bottom: 0.75rem;">
+                <textarea id="creator-import-text" rows="6" placeholder="貼上格式例如：&#10;apple - 蘋果&#10;banana - 香蕉&#10;cherry - 櫻桃&#10;&#10;或者（以逗號隔開）：&#10;dog, 狗&#10;cat, 貓" style="font-family: monospace; font-size: 0.85rem;"></textarea>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                <div class="form-group sm" style="margin-bottom: 0; flex-direction: row; align-items: center; gap: 0.5rem;">
+                    <label for="creator-import-separator" style="margin-bottom: 0; font-size: 0.8rem; white-space: nowrap;">分隔符設定：</label>
+                    <select id="creator-import-separator" style="padding: 0.4rem 0.75rem; font-size: 0.85rem; width: auto; max-width: 200px;">
+                        <option value="auto">自動偵測</option>
+                        <option value="dash">破折號 ( - )</option>
+                        <option value="comma">逗號 ( , 或 ， )</option>
+                        <option value="colon">冒號 ( : 或 ： )</option>
+                        <option value="tab">定位鍵 ( Tab )</option>
+                    </select>
+                </div>
+                
+                <div class="autopilot-toggle-wrapper" style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.25rem;">
+                        <input type="checkbox" id="creator-import-toggle-autopilot" checked style="width: 15px; height: 15px;">
+                        <label for="creator-import-toggle-autopilot" style="font-size: 0.8rem; cursor: pointer; white-space: nowrap;">
+                            <span class="badge badge-ai" style="padding: 0.1rem 0.3rem; font-size: 0.65rem;">AI Autopilot</span> 配圖
+                        </label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.25rem;">
+                        <input type="checkbox" id="creator-import-toggle-translate" checked style="width: 15px; height: 15px;">
+                        <label for="creator-import-toggle-translate" style="font-size: 0.8rem; cursor: pointer; white-space: nowrap;">
+                            <span class="badge badge-ai" style="padding: 0.1rem 0.3rem; font-size: 0.65rem; background: var(--accent-glow); color: #fff;">AI 智慧翻譯</span> 翻譯
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 解析預覽區 -->
+            <div class="import-preview-section" id="creator-import-preview-box" style="display: none; max-height: 180px; overflow-y: auto; margin-top: 0.75rem; border: 1px solid var(--border-glass); border-radius: var(--radius-sm); padding: 0.5rem; background: rgba(0,0,0,0.03);">
+                <h4 style="font-size: 0.85rem; margin-bottom: 0.35rem; font-weight: 700; color: var(--text-main);">解析預覽 (<span id="creator-import-preview-count">0</span>)</h4>
+                <table class="preview-table" style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 1px solid var(--border-glass);">
+                            <th style="padding: 0.35rem; font-size: 0.75rem; color: var(--text-muted);">正面 (單字)</th>
+                            <th style="padding: 0.35rem; font-size: 0.75rem; color: var(--text-muted);">反面 (解釋)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="creator-import-preview-tbody">
+                        <!-- 解析資料 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 1rem;">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-close-creator-import">取消</button>
+                <button type="button" class="btn btn-outline btn-sm" id="btn-preview-creator-import">解析預覽</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btn-execute-creator-import" disabled style="opacity: 0.5;">確認附加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 雙測驗模式選擇 Dialog -->
+    <div class="modal-overlay" id="quiz-select-modal">
+        <div class="modal-card glass-card border-glow" style="max-width: 480px; padding: 2rem;">
+            <h3 style="text-align: center; margin-bottom: 0.5rem; font-size: 1.4rem; font-weight: 800; color: var(--text-main);">選擇測驗模式</h3>
+            <p class="subtitle" style="text-align: center; margin-bottom: 2rem; color: var(--text-sub);">請選擇您今天想要挑戰的複習方式：</p>
+            
+            <div class="deck-actions-grid" style="grid-template-columns: 1fr; gap: 1rem; width: 100%;">
+                <button class="btn btn-action p-bg" id="btn-quiz-spelling" style="height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; text-align: center;">
+                    <span style="font-size: 1.1rem; font-weight: 700; color: #ffffff;">✍️ 拼寫打字挑戰</span>
+                    <span style="font-size: 0.75rem; opacity: 0.8; font-weight: 400; color: rgba(255,255,255,0.9);">輸入英文單字，考驗記憶精準度</span>
+                </button>
+                <button class="btn btn-action s-bg" id="btn-quiz-matching" style="height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; text-align: center;">
+                    <span style="font-size: 1.1rem; font-weight: 700; color: #ffffff;">⚡ 趣味連連看配對</span>
+                    <span style="font-size: 0.75rem; opacity: 0.8; font-weight: 400; color: rgba(255,255,255,0.9);">經典字義消消樂，考驗直覺與反應</span>
+                </button>
+            </div>
+            
+            <div class="modal-actions" style="margin-top: 1.5rem; justify-content: center; width: 100%;">
+                <button type="button" class="btn btn-secondary" id="btn-close-quiz-select" style="max-width: 150px; width: 100%;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
