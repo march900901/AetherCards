@@ -2048,17 +2048,20 @@ const CloudSyncManager = {
         }
         if (gatewaySkipBtn) {
             gatewaySkipBtn.onclick = () => {
-                if (gateway) gateway.style.display = 'none';
+                sessionStorage.setItem('google_auth_skipped', 'true');
+                if (gateway) gateway.classList.remove('active');
             };
         }
 
         // 核心安全阻擋：未登入時，一開機就立刻跳出登入鎖屏，不受 Google SDK 載入延遲的影響
         const hasValidSession = cachedToken && cachedExpiry && Date.now() < parseInt(cachedExpiry);
-        if (hasValidSession) {
-            if (gateway) gateway.style.display = 'none';
+        const skippedThisSession = sessionStorage.getItem('google_auth_skipped') === 'true';
+
+        if (hasValidSession || skippedThisSession) {
+            if (gateway) gateway.classList.remove('active');
         } else {
             this.clearLocalSession();
-            if (gateway) gateway.style.display = 'flex';
+            if (gateway) gateway.classList.add('active');
         }
 
         // 檢測 Google GSI SDK 載入狀態
@@ -2093,10 +2096,11 @@ const CloudSyncManager = {
                     state.googleAccessToken = tokenResponse.access_token;
                     localStorage.setItem('google_access_token', tokenResponse.access_token);
                     localStorage.setItem('google_token_expiry', (Date.now() + 3500 * 1000).toString());
+                    sessionStorage.removeItem('google_auth_skipped'); // 登入成功，清除 skip 狀態
                     
                     // 登入成功，立刻隱藏鎖屏
                     const gateway = document.getElementById('google-auth-gateway');
-                    if (gateway) gateway.style.display = 'none';
+                    if (gateway) gateway.classList.remove('active');
 
                     // 獲取用戶資料與進行首次同步
                     await this.fetchUserInfo();
@@ -2153,10 +2157,11 @@ const CloudSyncManager = {
         this.clearLocalSession();
         this.updateUI();
         alert('雲端帳號已登出，同步已關閉。');
+        sessionStorage.removeItem('google_auth_skipped'); // 登出後清除 skip 狀態
 
         // 重新顯示登入鎖屏
         const gateway = document.getElementById('google-auth-gateway');
-        if (gateway) gateway.style.display = 'flex';
+        if (gateway) gateway.classList.add('active');
     },
 
     // 清理本地 Session
