@@ -2372,8 +2372,7 @@ const CloudSyncManager = {
             // 3. 分流處理
             if (!fileId) {
                 // 雲端無檔案，直接將本地上傳
-                const ok = await this.uploadBackup();
-                if (ok && !silent) alert('雲端備份初始化成功，本地字卡已同步備份至 Google Drive！');
+                await this.uploadBackup();
             } else {
                 // 雲端有檔案，下載並比對
                 const cloudData = await this.downloadBackup(fileId);
@@ -2402,19 +2401,16 @@ const CloudSyncManager = {
                             if (uploadNew) {
                                 this.updateLocalTimestamp();
                                 await this.uploadBackup(fileId);
-                                if (!silent) alert('此裝置的本地單字卡已覆蓋更新至雲端！');
                             }
                         }
                     } else if (localLastUpdated > cloudLastUpdated) {
                         // 本地資料較新 ➔ 自動靜默上傳更新雲端
                         await this.uploadBackup(fileId);
-                        if (!silent) alert('雲端備份更新成功！已將最新字卡上傳至 Google Drive。');
                     } else {
                         // 資料完全一致
                         state.googleLastSyncTime = Date.now();
                         localStorage.setItem('google_last_sync_time', state.googleLastSyncTime.toString());
                         this.updateUI();
-                        if (!silent) alert('資料已是最新狀態，無需同步！');
                     }
                 }
             }
@@ -2454,7 +2450,6 @@ const CloudSyncManager = {
             state.googleLastSyncTime = Date.now();
             localStorage.setItem('google_last_sync_time', state.googleLastSyncTime.toString());
 
-            alert('雲端單字卡資料已成功還原至此設備！網頁將自動重新整理以載入最新字卡。');
             window.location.reload();
         } catch (e) {
             console.error('寫入雲端還原資料失敗: ', e);
