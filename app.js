@@ -2229,118 +2229,123 @@ const CloudSyncManager = {
 
     // 尋找備份檔案
     async findBackupFile() {
-        try {
-            const res = await fetch('https://www.googleapis.com/drive/v3/files?q=name=\'aethercards_backup.json\'&spaces=appDataFolder&fields=files(id,name,modifiedTime)', {
-                headers: { 'Authorization': `Bearer ${state.googleAccessToken}` }
-            });
-            
-            if (res.status === 401) {
-                // Token 過期，觸發重新授權
-                this.handleTokenExpired();
-                return null;
-            }
+        const res = await fetch('https://www.googleapis.com/drive/v3/files?q=name=\'aethercards_backup.json\'&spaces=appDataFolder&fields=files(id,name,modifiedTime)', {
+            headers: { 'Authorization': `Bearer ${state.googleAccessToken}` }
+        });
+        
+        if (res.status === 401) {
+            this.handleTokenExpired();
+            throw new Error('登入憑證已過期，請重新登入。');
+        }
 
-            if (res.ok) {
-                const data = await res.json();
-                if (data.files && data.files.length > 0) {
-                    this.cloudFileId = data.files[0].id;
-                    return data.files[0].id;
-                }
+        if (res.ok) {
+            const data = await res.json();
+            if (data.files && data.files.length > 0) {
+                this.cloudFileId = data.files[0].id;
+                return data.files[0].id;
             }
             return null;
-        } catch (e) {
-            console.error('查詢 Google Drive 備份檔案失敗: ', e);
-            return null;
+        } else {
+            const errJson = await res.json().catch(() => ({}));
+            const errMsg = errJson.error?.message || `HTTP 錯誤代碼 ${res.status}`;
+            throw new Error(`查詢雲端備份失敗 (${errMsg})。如果您是開發人員，請確認您的 GCP 專案中已啟用 "Google Drive API"。`);
         }
     },
 
     // 下載雲端備份
     async downloadBackup(fileId) {
-        try {
-            const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-                headers: { 'Authorization': `Bearer ${state.googleAccessToken}` }
-            });
-            if (res.ok) {
-                return await res.json();
-            }
-            return null;
-        } catch (e) {
-            console.error('下載雲端資料失敗: ', e);
-            return null;
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+            headers: { 'Authorization': `Bearer ${state.googleAccessToken}` }
+        });
+        
+        if (res.status === 401) {
+            this.handleTokenExpired();
+            throw new Error('登入憑證已過期，請重新登入。');
+        }
+
+        if (res.ok) {
+            return await res.json();
+        } else {
+            const errJson = await res.json().catch(() => ({}));
+            const errMsg = errJson.error?.message || `HTTP 錯誤代碼 ${res.status}`;
+            throw new Error(`下載備份失敗 (${errMsg})。`);
         }
     },
 
     // 上傳本地資料至雲端
     async uploadBackup(fileId = null) {
-        try {
-            // 組裝 IndexedDB 數據
-            const backupData = {
-                version: 1,
-                lastUpdated: parseInt(localStorage.getItem('aethercards_local_last_updated') || Date.now().toString()),
-                exportTime: Date.now(),
-                streakDays: state.streakDays,
-                decks: await AetherDB.getAllDecks(),
-                cards: []
+        // 組裝 IndexedDB 數據
+        const backupData = {
+            version: 1,
+            lastUpdated: parseInt(localStorage.getItem('aethercards_local_last_updated') || Date.now().toString()),
+            exportTime: Date.now(),
+            streakDays: state.streakDays,
+            decks: await AetherDB.getAllDecks(),
+            cards: []
+        };
+
+        const cardsLists = await Promise.all(backupData.decks.map(d => AetherDB.getCardsByDeck(d.id)));
+        backupData.cards = cardsLists.flat();
+
+        const jsonContent = JSON.stringify(backupData);
+
+        let res;
+        if (fileId) {
+            // 1. PATCH 覆蓋更新現有檔案
+            res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${state.googleAccessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: jsonContent
+            });
+        } else {
+            // 2. POST 新建檔案 (AppDataFolder)
+            const metadata = {
+                name: 'aethercards_backup.json',
+                parents: ['appDataFolder']
             };
+            const boundary = 'AetherCardsSyncBoundary';
+            const multipartRequestBody =
+                `--${boundary}\r\n` +
+                'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+                JSON.stringify(metadata) + '\r\n' +
+                `--${boundary}\r\n` +
+                'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+                jsonContent + '\r\n' +
+                `--${boundary}--`;
 
-            const cardsLists = await Promise.all(backupData.decks.map(d => AetherDB.getCardsByDeck(d.id)));
-            backupData.cards = cardsLists.flat();
+            res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${state.googleAccessToken}`,
+                    'Content-Type': `multipart/related; boundary=${boundary}`
+                },
+                body: multipartRequestBody
+            });
+        }
 
-            const jsonContent = JSON.stringify(backupData);
+        if (res.status === 401) {
+            this.handleTokenExpired();
+            throw new Error('登入憑證已過期，請重新登入。');
+        }
 
-            let res;
-            if (fileId) {
-                // 1. PATCH 覆蓋更新現有檔案
-                res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${state.googleAccessToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: jsonContent
-                });
-            } else {
-                // 2. POST 新建檔案 (AppDataFolder)
-                const metadata = {
-                    name: 'aethercards_backup.json',
-                    parents: ['appDataFolder']
-                };
-                const boundary = 'AetherCardsSyncBoundary';
-                const multipartRequestBody =
-                    `--${boundary}\r\n` +
-                    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-                    JSON.stringify(metadata) + '\r\n' +
-                    `--${boundary}\r\n` +
-                    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
-                    jsonContent + '\r\n' +
-                    `--${boundary}--`;
-
-                res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${state.googleAccessToken}`,
-                        'Content-Type': `multipart/related; boundary=${boundary}`
-                    },
-                    body: multipartRequestBody
-                });
-            }
-
-            if (res.ok) {
-                const responseData = await res.json();
-                this.cloudFileId = responseData.id || this.cloudFileId;
-                state.googleLastSyncTime = Date.now();
-                localStorage.setItem('google_last_sync_time', state.googleLastSyncTime.toString());
-                
-                // 本地同步時間對齊
-                localStorage.setItem('aethercards_local_last_updated', backupData.lastUpdated.toString());
-                
-                this.updateUI();
-                return true;
-            }
-            return false;
-        } catch (e) {
-            console.error('上傳備份失敗: ', e);
-            return false;
+        if (res.ok) {
+            const responseData = await res.json();
+            this.cloudFileId = responseData.id || this.cloudFileId;
+            state.googleLastSyncTime = Date.now();
+            localStorage.setItem('google_last_sync_time', state.googleLastSyncTime.toString());
+            
+            // 本地同步時間對齊
+            localStorage.setItem('aethercards_local_last_updated', backupData.lastUpdated.toString());
+            
+            this.updateUI();
+            return true;
+        } else {
+            const errJson = await res.json().catch(() => ({}));
+            const errMsg = errJson.error?.message || `HTTP 錯誤代碼 ${res.status}`;
+            throw new Error(`上傳備份失敗 (${errMsg})。如果您是開發人員，請確認您的 GCP OAuth 同意畫面已設定 drive.appdata 權限，且登入時有勾選該權限核取方塊。`);
         }
     },
 
@@ -2415,7 +2420,7 @@ const CloudSyncManager = {
             }
         } catch (e) {
             console.error('同步失敗: ', e);
-            if (!silent) alert('雲端同步失敗，請檢查網路連線或稍後重試。');
+            if (!silent) alert('雲端同步失敗：' + e.message);
         } finally {
             if (!silent) {
                 const syncBtn = document.getElementById('btn-google-sync-now');
