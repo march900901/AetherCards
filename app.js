@@ -2379,9 +2379,9 @@ const CloudSyncManager = {
                     if (cloudLastUpdated > localLastUpdated) {
                         // 雲端資料較新 ➔ 下載還原
                         
-                        // 智慧型靜默還原：如果本地完全未編輯過（時間戳為 0，如剛初始化的新設備）或本地無資料
+                        // 智慧型靜默還原：只有當本地完全沒有任何字卡夾時（例如剛登入的新設備），才自動進行下載與覆蓋還原
                         const localDecksCount = (await AetherDB.getAllDecks()).length;
-                        if (localLastUpdated === 0 || localDecksCount === 0) {
+                        if (localDecksCount === 0) {
                             await this.restoreCloudData(cloudData);
                             return;
                         }
@@ -2476,10 +2476,10 @@ const CloudSyncManager = {
 
     // 防抖自動同步 (當 IndexedDB 更新時被 Hook 調用)
     triggerDebounceSync() {
-        if (!state.googleAccessToken || !state.autoSyncEnabled) return;
-        
-        // 更新本地更新時間戳
+        // 只要本地資料庫有更新，就無條件更新本地修改時間戳，保證登入後判斷新舊的準確性
         this.updateLocalTimestamp();
+
+        if (!state.googleAccessToken || !state.autoSyncEnabled) return;
 
         if (this.syncDebounceTimer) clearTimeout(this.syncDebounceTimer);
         this.syncDebounceTimer = setTimeout(() => {
