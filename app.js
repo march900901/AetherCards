@@ -159,7 +159,7 @@ const AetherDB = {
             const store = tx.objectStore('decks');
             store.put(deck);
             tx.oncomplete = () => {
-                CloudSyncManager.triggerDebounceSync();
+                CloudSyncManager.triggerDebounceSync(true); // 儲存字卡夾，立即同步
                 resolve(true);
             };
         });
@@ -192,7 +192,7 @@ const AetherDB = {
                 }
             };
             tx.oncomplete = () => {
-                CloudSyncManager.triggerDebounceSync();
+                CloudSyncManager.triggerDebounceSync(true); // 刪除字卡夾，立即同步
                 resolve(true);
             };
         });
@@ -232,7 +232,7 @@ const AetherDB = {
             const store = tx.objectStore('cards');
             cards.forEach(card => store.put(card));
             tx.oncomplete = () => {
-                CloudSyncManager.triggerDebounceSync();
+                CloudSyncManager.triggerDebounceSync(true); // 批次儲存，立即同步
                 resolve(true);
             };
         });
@@ -2032,6 +2032,9 @@ const CloudSyncManager = {
     tokenClient: null,
     syncDebounceTimer: null,
     cloudFileId: null,
+    isSyncing: false,
+    syncPending: false,
+    syncPendingSilent: true,
 
     // 初始化 GIS SDK
     init() {
@@ -2105,6 +2108,7 @@ const CloudSyncManager = {
                     // 獲取用戶資料與進行首次同步
                     await this.fetchUserInfo();
                     await this.sync(false);
+                    this.startAutoPoll(); // 登入成功，啟動背景自動輪詢同步
                 }
             });
 
@@ -2129,6 +2133,7 @@ const CloudSyncManager = {
                 
                 this.updateUI();
                 setTimeout(() => this.sync(true), 1500);
+                this.startAutoPoll(); // 開機偵測到登入狀態，啟動背景自動輪詢同步
             }
         } catch (e) {
             console.error('初始化 Google OAuth Client 失敗: ', e);
@@ -2153,6 +2158,10 @@ const CloudSyncManager = {
             google.accounts.oauth2.revoke(state.googleAccessToken, () => {
                 console.log('Google Access Token 已撤銷');
             });
+        }
+        if (this.autoPollInterval) {
+            clearInterval(this.autoPollInterval);
+            this.autoPollInterval = null;
         }
         this.clearLocalSession();
         this.updateUI();
@@ -2353,6 +2362,17 @@ const CloudSyncManager = {
     async sync(silent = false) {
         if (!state.googleAccessToken) return;
         
+        if (this.isSyncing) {
+            console.log('Sync already in progress, queuing next sync...');
+            this.syncPending = true;
+            this.syncPendingSilent = this.syncPendingSilent && silent;
+            return;
+        }
+
+        this.isSyncing = true;
+        this.syncPending = false;
+        this.syncPendingSilent = silent;
+
         try {
             if (!silent) {
                 // 在 UI 上加入載入提示
@@ -2383,24 +2403,27 @@ const CloudSyncManager = {
                     if (cloudLastUpdated > localLastUpdated) {
                         // 雲端資料較新 ➔ 下載還原
                         
-                        // 智慧型靜默還原：只有當本地完全沒有任何字卡夾時（例如剛登入的新設備），才自動進行下載與覆蓋還原
+                        // 智慧型靜默還原：如果本地無資料，或本地自上次同步以來未曾修改過
                         const localDecksCount = (await AetherDB.getAllDecks()).length;
-                        if (localDecksCount === 0) {
-                            await this.restoreCloudData(cloudData);
+                        const isLocalClean = localLastUpdated <= (state.googleLastSyncTime || 0);
+
+                        if (localDecksCount === 0 || isLocalClean) {
+                            await this.restoreCloudData(cloudData, true);
                             return;
                         }
 
-                        // 本地有修改過才提示用戶覆蓋或上傳
-                        const confirmRestore = confirm(`偵測到您在 Google Drive 雲端有更新的單字卡備份！\n\n雲端更新時間: ${new Date(cloudLastUpdated).toLocaleString()}\n本地更新時間: ${new Date(localLastUpdated).toLocaleString()}\n\n是否將雲端的 ${cloudData.decks.length} 個字卡夾與 ${cloudData.cards.length} 張字卡「還原覆蓋」到這台設備上？\n(注意：這將會覆蓋您這台設備目前的資料)`);
-                        
-                        if (confirmRestore) {
-                            await this.restoreCloudData(cloudData);
-                        } else {
-                            // 如果用戶取消了，可以選擇將本地資料強制覆蓋雲端
-                            const uploadNew = confirm('是否改為將此裝置的本地資料「上傳覆蓋」雲端？');
-                            if (uploadNew) {
-                                this.updateLocalTimestamp();
-                                await this.uploadBackup(fileId);
+                        // 本地有衝突修改（且非靜默同步時）才提示用戶
+                        if (!silent) {
+                            const confirmRestore = confirm(`偵測到您在 Google Drive 雲端有更新的單字卡備份！\n\n雲端更新時間: ${new Date(cloudLastUpdated).toLocaleString()}\n本地更新時間: ${new Date(localLastUpdated).toLocaleString()}\n\n是否將雲端的 ${cloudData.decks.length} 個字卡夾與 ${cloudData.cards.length} 張字卡「還原覆蓋」到這台設備上？\n(注意：這將會覆蓋您這台設備目前的資料)`);
+                            
+                            if (confirmRestore) {
+                                await this.restoreCloudData(cloudData, false);
+                            } else {
+                                const uploadNew = confirm('是否改為將此裝置的本地資料「上傳覆蓋」雲端？');
+                                if (uploadNew) {
+                                    this.updateLocalTimestamp();
+                                    await this.uploadBackup(fileId);
+                                }
                             }
                         }
                     } else if (localLastUpdated > cloudLastUpdated) {
@@ -2418,6 +2441,8 @@ const CloudSyncManager = {
             console.error('同步失敗: ', e);
             if (!silent) alert('雲端同步失敗：' + e.message);
         } finally {
+            this.isSyncing = false;
+            
             if (!silent) {
                 const syncBtn = document.getElementById('btn-google-sync-now');
                 if (syncBtn) {
@@ -2425,11 +2450,19 @@ const CloudSyncManager = {
                     syncBtn.textContent = '立即同步';
                 }
             }
+
+            // Check if there is a pending sync requested
+            if (this.syncPending) {
+                const nextSilent = this.syncPendingSilent;
+                this.syncPending = false;
+                this.syncPendingSilent = true; // reset to default
+                setTimeout(() => this.sync(nextSilent), 50);
+            }
         }
     },
 
     // 還原雲端數據到本地 IndexedDB
-    async restoreCloudData(cloudData) {
+    async restoreCloudData(cloudData, preventReload = false) {
         try {
             // 清理本地舊資料
             await AetherDB.clearAllData();
@@ -2449,11 +2482,26 @@ const CloudSyncManager = {
             localStorage.setItem('aethercards_local_last_updated', cloudData.lastUpdated.toString());
             state.googleLastSyncTime = Date.now();
             localStorage.setItem('google_last_sync_time', state.googleLastSyncTime.toString());
+            this.updateUI();
 
-            window.location.reload();
+            if (preventReload) {
+                // 靜默刷新當前畫面，避免頁面重整打擾使用者
+                console.log('背景靜默還原成功，正在刷新當前畫面UI...');
+                if (state.currentView === 'dashboard') {
+                    AppRouter.loadDashboard();
+                } else if (state.currentView === 'decks') {
+                    AppRouter.loadDecksManager();
+                } else if (state.currentView === 'deck-detail') {
+                    AppRouter.loadDeckDetail(state.activeDeckId);
+                }
+            } else {
+                window.location.reload();
+            }
         } catch (e) {
             console.error('寫入雲端還原資料失敗: ', e);
-            alert('還原雲端資料寫入本地 IndexedDB 失敗，請重試。');
+            if (!preventReload) {
+                alert('還原雲端資料寫入本地 IndexedDB 失敗，請重試。');
+            }
         }
     },
 
@@ -2468,6 +2516,10 @@ const CloudSyncManager = {
         console.warn('Google 存取權限已過期');
         this.clearLocalSession();
         this.updateUI();
+        if (this.autoPollInterval) {
+            clearInterval(this.autoPollInterval);
+            this.autoPollInterval = null;
+        }
         // 靜默嘗試重新獲取，或提示登入
         if (confirm('您的 Google 雲端連線已過期，請點擊確定以重新驗證帳號。')) {
             this.signIn();
@@ -2475,17 +2527,35 @@ const CloudSyncManager = {
     },
 
     // 防抖自動同步 (當 IndexedDB 更新時被 Hook 調用)
-    triggerDebounceSync() {
+    triggerDebounceSync(immediate = false) {
         // 只要本地資料庫有更新，就無條件更新本地修改時間戳，保證登入後判斷新舊的準確性
         this.updateLocalTimestamp();
 
         if (!state.googleAccessToken || !state.autoSyncEnabled) return;
 
         if (this.syncDebounceTimer) clearTimeout(this.syncDebounceTimer);
-        this.syncDebounceTimer = setTimeout(() => {
-            console.log('背景自動同步觸發...');
-            this.sync(true); // 靜默背景同步
-        }, 3000); // 3秒防抖
+        
+        if (immediate) {
+            console.log('背景自動同步觸發 (立即)...');
+            this.sync(true); // 靜默背景立即同步
+        } else {
+            this.syncDebounceTimer = setTimeout(() => {
+                console.log('背景自動同步觸發 (防抖)...');
+                this.sync(true); // 靜默背景防抖同步
+            }, 3000); // 3秒防抖
+        }
+    },
+
+    // 啟動定時輪詢，讓多台登入設備自動在背景進行同步
+    autoPollInterval: null,
+    startAutoPoll() {
+        if (this.autoPollInterval) clearInterval(this.autoPollInterval);
+        this.autoPollInterval = setInterval(() => {
+            if (state.googleAccessToken && state.autoSyncEnabled) {
+                console.log('背景自動輪詢雲端更新...');
+                this.sync(true); // 靜默背景同步
+            }
+        }, 30000); // 每 30 秒輪詢一次
     }
 };
 
