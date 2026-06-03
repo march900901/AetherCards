@@ -2267,6 +2267,7 @@ textarea:focus {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 1rem;
     margin-top: 1rem;
     padding: 0.5rem 0;
@@ -2313,6 +2314,8 @@ textarea:focus {
     border-radius: 50px;
     font-size: 0.8rem;
     font-weight: 600;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .status-badge.status-offline {
@@ -2333,6 +2336,7 @@ textarea:focus {
     border-radius: 50%;
     background-color: currentColor;
     display: inline-block;
+    flex-shrink: 0;
 }
 
 /* 呼吸動畫 */
