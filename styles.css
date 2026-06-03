@@ -1519,6 +1519,22 @@ textarea:focus {
 }
 
 /* --- 11. 拼寫測驗挑戰 (Quiz View) --- */
+.quiz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .quiz-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+}
+
 .quiz-progress-info {
     display: flex;
     flex-direction: column;

@@ -1062,12 +1062,16 @@ const QuizSelectModalManager = {
 
 // --- 7.5 連連看配對遊戲引擎 (Match Game Session) ---
 const MatchGameManager = {
-    cards: [],
-    selectedCards: [], // [{ card, type, element }]
+    allCards: [],
+    remainingCards: [],
+    roundCards: [],
+    completedCardIds: new Set(),
+    selectedCards: [],
     timerId: null,
     startTime: 0,
     elapsedTime: 0,
-    matchedCount: 0,
+    roundMatchedCount: 0,
+    roundTargetMatches: 0,
 
     init(cards) {
         if (cards.length < 4) {
@@ -1076,44 +1080,22 @@ const MatchGameManager = {
             return;
         }
 
+        this.allCards = [...cards];
+        this.remainingCards = [...cards].sort(() => 0.5 - Math.random());
+        this.completedCardIds = new Set();
+        this.selectedCards = [];
+        this.startTime = Date.now();
+        this.elapsedTime = 0;
+
         // 隱藏成功面板，顯示遊戲網格
         document.getElementById('match-grid-board').style.display = 'grid';
         document.getElementById('match-result-box').style.display = 'none';
         document.getElementById('match-timer-text').textContent = '0.0s';
         
-        // 隨機選取 4 張卡片
-        const shuffled = [...cards].sort(() => 0.5 - Math.random());
-        const selected = shuffled.slice(0, 4);
-        this.cards = selected;
-        this.selectedCards = [];
-        this.matchedCount = 0;
-        this.startTime = Date.now();
-        this.elapsedTime = 0;
-
-        // 打包 4 個單字 與 4 個意思
-        const items = [];
-        selected.forEach(c => {
-            items.push({ id: c.id, text: c.front, type: 'front', raw: c });
-            items.push({ id: c.id, text: c.back, type: 'back', raw: c });
-        });
-
-        // 隨機打亂這 8 個 items
-        items.sort(() => 0.5 - Math.random());
-
-        // 渲染網格
-        const board = document.getElementById('match-grid-board');
-        board.innerHTML = '';
-
-        items.forEach(item => {
-            const cardDiv = document.createElement('div');
-            cardDiv.className = 'match-card';
-            cardDiv.textContent = item.text;
-            
-            // 綁定點擊事件
-            cardDiv.onclick = () => this.handleCardSelect(item, cardDiv);
-            
-            board.appendChild(cardDiv);
-        });
+        // 顯示進度板
+        const progressBox = document.getElementById('match-progress-box');
+        if (progressBox) progressBox.style.display = 'flex';
+        this.updateProgressUI();
 
         // 啟動計時器
         if (this.timerId) clearInterval(this.timerId);
@@ -1125,32 +1107,81 @@ const MatchGameManager = {
         // 綁定退出與重開按鈕
         document.getElementById('btn-restart-match').onclick = () => this.init(cards);
         document.getElementById('btn-match-result-exit').onclick = () => AppRouter.navigateTo('deck-detail', state.activeDeckId);
+
+        this.startRound();
+    },
+
+    startRound() {
+        this.selectedCards = [];
+        this.roundMatchedCount = 0;
+
+        // 每次最多抽 6 張卡進行配對 (12個卡片方塊)
+        const countFromRemaining = Math.min(6, this.remainingCards.length);
+        let cardsForRound = this.remainingCards.splice(0, countFromRemaining);
+
+        // 如果剩下的卡片不足 6 張，且字卡夾總數大於等於 6，則從已配對的池中抽卡補滿 6 張，以維持 12 格版面美觀
+        const targetSize = Math.min(6, this.allCards.length);
+        if (cardsForRound.length < targetSize) {
+            const needed = targetSize - cardsForRound.length;
+            const matchedPool = this.allCards.filter(c => !cardsForRound.some(rc => rc.id === c.id));
+            const padding = matchedPool.sort(() => 0.5 - Math.random()).slice(0, needed);
+            cardsForRound = [...cardsForRound, ...padding];
+        }
+
+        this.roundCards = cardsForRound;
+        this.roundTargetMatches = cardsForRound.length;
+
+        // 打包單字與意思
+        const items = [];
+        cardsForRound.forEach(c => {
+            items.push({ id: c.id, text: c.front, type: 'front', raw: c });
+            items.push({ id: c.id, text: c.back, type: 'back', raw: c });
+        });
+
+        // 隨機打亂
+        items.sort(() => 0.5 - Math.random());
+
+        // 渲染
+        const board = document.getElementById('match-grid-board');
+        board.innerHTML = '';
+        board.style.opacity = '1';
+
+        items.forEach(item => {
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'match-card';
+            cardDiv.textContent = item.text;
+            cardDiv.onclick = () => this.handleCardSelect(item, cardDiv);
+            board.appendChild(cardDiv);
+        });
+
+        this.updateProgressUI();
+    },
+
+    updateProgressUI() {
+        const textEl = document.getElementById('match-progress-text');
+        if (textEl) {
+            textEl.textContent = `${this.completedCardIds.size} / ${this.allCards.length}`;
+        }
     },
 
     handleCardSelect(item, element) {
-        // 如果已經被消除或者已經選中，就不處理
         if (element.classList.contains('matched')) return;
         
-        // 如果點選同一個，取消選取
         if (this.selectedCards.some(sc => sc.element === element)) {
             element.classList.remove('selected');
             this.selectedCards = this.selectedCards.filter(sc => sc.element !== element);
             return;
         }
 
-        // 選取該卡片
         element.classList.add('selected');
         this.selectedCards.push({ item, element });
 
-        // 播放點擊音效
         if (state.soundEnabled) SoundFX.playFlip();
 
-        // 如果選滿了兩張，進行比對
         if (this.selectedCards.length === 2) {
             const card1 = this.selectedCards[0];
             const card2 = this.selectedCards[1];
 
-            // 檢查是否是同一張卡片的正面與反面
             if (card1.item.id === card2.item.id && card1.item.type !== card2.item.type) {
                 // 配對成功！
                 card1.element.classList.add('matched');
@@ -1158,17 +1189,32 @@ const MatchGameManager = {
                 card1.element.classList.remove('selected');
                 card2.element.classList.remove('selected');
                 
-                this.matchedCount++;
+                this.roundMatchedCount++;
+                this.completedCardIds.add(card1.item.id);
                 this.selectedCards = [];
 
                 if (state.soundEnabled) SoundFX.playSuccess();
+                this.updateProgressUI();
 
-                // 檢查是否全部配對完成
-                if (this.matchedCount === 4) {
-                    this.endGame();
+                // 檢查是否配對完當前關卡
+                if (this.roundMatchedCount === this.roundTargetMatches) {
+                    if (this.completedCardIds.size === this.allCards.length) {
+                        // 全部字卡夾配對完成，遊戲結束
+                        this.endGame();
+                    } else {
+                        // 還有剩餘單字，淡出目前網格並加載下一輪
+                        const board = document.getElementById('match-grid-board');
+                        setTimeout(() => {
+                            board.style.opacity = '0';
+                            board.style.transition = 'opacity 0.4s ease';
+                            setTimeout(() => {
+                                this.startRound();
+                            }, 400);
+                        }, 500);
+                    }
                 }
             } else {
-                // 配對失敗！
+                // 配對失敗
                 card1.element.classList.add('error-flash');
                 card2.element.classList.add('error-flash');
                 card1.element.classList.remove('selected');
@@ -1176,7 +1222,6 @@ const MatchGameManager = {
 
                 if (state.soundEnabled) SoundFX.playFailure();
 
-                // 延遲 400ms 後移除錯誤類別並清空選取
                 const scCopy = [...this.selectedCards];
                 this.selectedCards = [];
                 setTimeout(() => {
@@ -1191,12 +1236,13 @@ const MatchGameManager = {
         clearInterval(this.timerId);
         this.timerId = null;
 
-        // 播放歡呼音效
         if (state.soundEnabled) SoundFX.playSuccess();
 
-        // 顯示成功面板
         setTimeout(() => {
             document.getElementById('match-grid-board').style.display = 'none';
+            const progressBox = document.getElementById('match-progress-box');
+            if (progressBox) progressBox.style.display = 'none';
+            
             document.getElementById('match-result-box').style.display = 'block';
             document.getElementById('match-result-time').textContent = this.elapsedTime.toFixed(2);
         }, 500);
@@ -2922,6 +2968,13 @@ const Seeds = {
 
 // --- 13. 系統初始化與事件綁定 ---
 window.addEventListener('DOMContentLoaded', () => {
+    // 0. 註冊 PWA Service Worker 以利桌面與手機端安裝 App 圖標
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('Service Worker 註冊成功:', reg.scope))
+            .catch(err => console.warn('Service Worker 註冊失敗:', err));
+    }
+
     // 1. 初始化 IndexedDB 數據庫
     AetherDB.init()
         .then(() => {
