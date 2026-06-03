@@ -253,12 +253,13 @@ body {
 
 .btn-secondary {
     background: #e2e8f0; /* 實體 Slate-200 背景，提供飽滿的點擊底色 */
-    color: var(--text-main);
+    color: #0f172a !important; /* 改為高對比深色文字，確保完美可讀性 */
     border: 1.5px solid #cbd5e1; /* 實體 1.5px Slate-300 邊線 */
 }
 .btn-secondary:hover {
     background: #cbd5e1; /* Hover 變深為 Slate-300 */
     border-color: #94a3b8; /* Slate-400 */
+    color: #000000 !important;
     transform: translateY(-1px);
 }
 
