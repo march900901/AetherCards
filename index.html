@@ -149,6 +149,10 @@
                             <svg viewBox="0 0 24 24" width="18" height="18" style="margin-right: 4px; vertical-align: middle;"><path fill="currentColor" d="M9 3L5 7h3v6h2V7h3L9 3zm10 18l4-4h-3v-6h-2v6h-3l4 4zM5 14h6v2H5v-2zm14-6h-6v2h6V8z"/></svg>
                             合併字卡夾
                         </button>
+                        <button class="btn btn-secondary" id="btn-trigger-split-deck">
+                            <svg viewBox="0 0 24 24" width="18" height="18" style="margin-right: 4px; vertical-align: middle;"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-6 2h1v14h-1V5zm-2 14H5V5h6v14zm8 0h-4V5h4v14z"/></svg>
+                            分割字卡夾
+                        </button>
                         <button class="btn btn-secondary" id="btn-trigger-import-single">
                             <svg viewBox="0 0 24 24" width="18" height="18" style="margin-right: 4px; vertical-align: middle;"><path fill="currentColor" d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
                             匯入分享字卡夾
@@ -798,7 +802,7 @@
     <div class="modal-overlay" id="merge-decks-modal">
         <div class="modal-card glass-card border-glow" style="max-width: 500px; padding: 2rem;">
             <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">合併字卡夾</h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">合併會將多個來源字卡夾的單字卡複製到目標字卡夾中，不會刪除原本的字卡夾。</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">合併會將多個來源字卡夾的單字移轉至目標字卡夾中。<strong>合併後，原先的來源字卡夾將會被自動刪除</strong>。</p>
             
             <div class="form-group" style="margin-bottom: 1.25rem;">
                 <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-sub); display: block; margin-bottom: 0.5rem;">1. 選擇合併至（目標字卡夾）：</label>
@@ -827,6 +831,39 @@
         </div>
     </div>
 
+    <!-- 分割字卡夾 Modal -->
+    <div class="modal-overlay" id="split-deck-modal">
+        <div class="modal-card glass-card border-glow" style="max-width: 500px; padding: 2rem; width: 90%;">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">分割字卡夾</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">將一個字卡夾中的部分單字移出，建立一個全新的字卡夾。</p>
+            
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-sub); display: block; margin-bottom: 0.5rem;">1. 選擇要分割的來源字卡夾：</label>
+                <select id="split-source-select" style="width: 100%; padding: 0.75rem 1rem; border-radius: var(--radius-sm); background: var(--panel-glass-solid); border: 1px solid var(--border-glass); color: var(--text-main); outline: none;">
+                    <option value="">-- 請選擇來源字卡夾 --</option>
+                    <!-- 動態載入字卡夾選項 -->
+                </select>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label for="split-new-deck-name" style="font-size: 0.85rem; font-weight: 600; color: var(--text-sub); display: block; margin-bottom: 0.5rem;">2. 新字卡夾名稱：</label>
+                <input type="text" id="split-new-deck-name" placeholder="請輸入新字卡夾名稱" style="width: 100%; padding: 0.75rem 1rem; border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass); color: var(--text-main); outline: none;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-sub); display: block; margin-bottom: 0.5rem;">3. 選擇要移出的單字卡（可多選）：</label>
+                <div id="split-cards-list" style="max-height: 200px; overflow-y: auto; padding: 0.5rem; border: 1px solid var(--border-glass); border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.02); display: flex; flex-direction: column; gap: 0.5rem;">
+                    <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 1rem;">請先選擇來源字卡夾</p>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" id="btn-close-split-modal">取消</button>
+                <button type="button" class="btn btn-primary" id="btn-execute-split-deck">執行分割</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 全域 Google 帳號登入網關鎖屏 Overlay -->
     <div class="modal-overlay" id="google-auth-gateway" style="z-index: 9999; background: rgba(15, 23, 42, 0.98); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);">
         <div class="modal-card glass-card border-glow" style="max-width: 420px; padding: 2.5rem; text-align: center; transform: scale(1); transition: transform 0.3s ease;">
@@ -847,6 +884,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=5"></script>
 </body>
 </html>

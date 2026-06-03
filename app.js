@@ -1148,6 +1148,13 @@ const MergeDecksManager = {
         }
         
         const targetValue = targetSelect.value;
+        
+        // 安全檢查：目標字卡夾不能是勾選的來源之一
+        if (targetValue !== 'new' && sourceDeckIds.includes(targetValue)) {
+            alert('目標字卡夾不可同時為被合併的來源字卡夾，以免該字卡夾被自動刪除！');
+            return;
+        }
+        
         let targetDeckPromise;
         let targetDeckId;
         
@@ -1211,21 +1218,176 @@ const MergeDecksManager = {
                     });
                     
                     if (mergedCards.length === 0) {
-                        alert('合併完成！沒有新增任何非重複的單字卡。');
-                        modal.classList.remove('active');
-                        // 重新加載字卡夾清單
-                        AppRouter.loadDecksManager();
+                        // 即使沒有新增卡片，仍然應該刪除來源字卡夾
+                        const deletePromises = sourceDeckIds.map(srcId => AetherDB.deleteDeck(srcId));
+                        Promise.all(deletePromises).then(() => {
+                            alert('合併完成！未新增任何非重複的單字卡，已清理來源字卡夾。');
+                            modal.classList.remove('active');
+                            AppRouter.loadDecksManager();
+                        });
                         return;
                     }
                     
                     AetherDB.saveCardsBatch(mergedCards).then(() => {
-                        alert(`成功合併字卡夾！共複製了 ${mergedCards.length} 張單字卡到目標「${targetDeck.name}」中。`);
-                        modal.classList.remove('active');
-                        // 重新加載字卡夾清單
-                        AppRouter.loadDecksManager();
+                        // 合併成功後，刪除所有來源字卡夾
+                        const deletePromises = sourceDeckIds.map(srcId => AetherDB.deleteDeck(srcId));
+                        Promise.all(deletePromises).then(() => {
+                            alert(`成功移轉字卡夾！共移轉了 ${mergedCards.length} 張非重複單字卡到目標「${targetDeck.name}」中，原有的來源字卡夾已刪除。`);
+                            modal.classList.remove('active');
+                            // 重新加載字卡夾清單
+                            AppRouter.loadDecksManager();
+                        });
                     });
                 });
             });
+        });
+    }
+};
+
+// --- 7.1 字卡夾分割管理器 (Split Deck Manager) ---
+const SplitDeckManager = {
+    show() {
+        const modal = document.getElementById('split-deck-modal');
+        const sourceSelect = document.getElementById('split-source-select');
+        const newDeckNameInput = document.getElementById('split-new-deck-name');
+        const cardsList = document.getElementById('split-cards-list');
+        
+        // 重置欄位
+        newDeckNameInput.value = '';
+        sourceSelect.value = '';
+        cardsList.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 1rem;">請先選擇來源字卡夾</p>';
+        
+        // 載入所有字卡夾
+        AetherDB.getAllDecks().then(decks => {
+            sourceSelect.innerHTML = '<option value="">-- 請選擇來源字卡夾 --</option>';
+            decks.forEach(deck => {
+                const opt = document.createElement('option');
+                opt.value = deck.id;
+                opt.textContent = deck.name;
+                sourceSelect.appendChild(opt);
+            });
+            
+            // 監聽來源字卡夾選擇變化
+            sourceSelect.onchange = () => {
+                const deckId = sourceSelect.value;
+                if (!deckId) {
+                    cardsList.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 1rem;">請先選擇來源字卡夾</p>';
+                    return;
+                }
+                
+                cardsList.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 1rem;">載入字卡中...</p>';
+                
+                AetherDB.getCardsByDeck(deckId).then(cards => {
+                    cardsList.innerHTML = '';
+                    if (cards.length === 0) {
+                        cardsList.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 1rem;">此字卡夾內沒有任何單字卡</p>';
+                        return;
+                    }
+                    
+                    cards.forEach(card => {
+                        const div = document.createElement('div');
+                        div.style.display = 'flex';
+                        div.style.alignItems = 'center';
+                        div.style.gap = '0.5rem';
+                        div.style.padding = '0.25rem 0.5rem';
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.value = card.id;
+                        checkbox.id = `split-card-${card.id}`;
+                        checkbox.style.cursor = 'pointer';
+                        
+                        const label = document.createElement('label');
+                        label.htmlFor = `split-card-${card.id}`;
+                        label.textContent = `${card.front} - ${card.back}`;
+                        label.style.fontSize = '0.9rem';
+                        label.style.color = 'var(--text-sub)';
+                        label.style.cursor = 'pointer';
+                        
+                        div.appendChild(checkbox);
+                        div.appendChild(label);
+                        cardsList.appendChild(div);
+                    });
+                });
+            };
+            
+            modal.classList.add('active');
+        });
+        
+        // 綁定取消與關閉事件
+        document.getElementById('btn-close-split-modal').onclick = () => {
+            modal.classList.remove('active');
+        };
+        
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.classList.remove('active');
+        };
+        
+        // 綁定執行分割按鈕
+        document.getElementById('btn-execute-split-deck').onclick = () => {
+            this.executeSplit();
+        };
+    },
+    
+    executeSplit() {
+        const sourceSelect = document.getElementById('split-source-select');
+        const newDeckNameInput = document.getElementById('split-new-deck-name');
+        const modal = document.getElementById('split-deck-modal');
+        
+        const sourceDeckId = sourceSelect.value;
+        if (!sourceDeckId) {
+            alert('請選擇來源字卡夾！');
+            return;
+        }
+        
+        const newName = newDeckNameInput.value.trim();
+        if (!newName) {
+            alert('請輸入新字卡夾名稱！');
+            return;
+        }
+        
+        // 取得所有選取的單字卡 ID
+        const checkboxes = document.querySelectorAll('#split-cards-list input[type="checkbox"]:checked');
+        const selectedCardIds = Array.from(checkboxes).map(cb => cb.value);
+        
+        if (selectedCardIds.length === 0) {
+            alert('請至少勾選一張要移出的單字卡！');
+            return;
+        }
+        
+        // 1. 建立新字卡夾
+        const newDeckId = 'deck_' + Date.now();
+        const newDeck = {
+            id: newDeckId,
+            name: newName,
+            desc: `由字卡夾分割建立：源自「${sourceSelect.options[sourceSelect.selectedIndex].text}」`,
+            theme: 'grad-aurora',
+            createdAt: Date.now()
+        };
+        
+        // 2. 獲取所有移轉卡片的詳細資料，並更改為新的 deckId
+        AetherDB.getCardsByDeck(sourceDeckId).then(allCards => {
+            const cardsToMove = allCards.filter(c => selectedCardIds.includes(c.id));
+            
+            if (cardsToMove.length === 0) {
+                alert('找不到選取的單字卡！');
+                return;
+            }
+            
+            // 更新卡片的 deckId
+            const updatedCards = cardsToMove.map(c => ({
+                ...c,
+                deckId: newDeckId
+            }));
+            
+            // 先儲存新字卡夾，再批次更新卡片
+            AetherDB.saveDeck(newDeck)
+                .then(() => AetherDB.saveCardsBatch(updatedCards))
+                .then(() => {
+                    alert(`成功分割字卡夾！已移轉 ${updatedCards.length} 張單字卡至新字卡夾「${newDeck.name}」中。`);
+                    modal.classList.remove('active');
+                    AppRouter.loadDecksManager();
+                });
         });
     }
 };
@@ -3213,6 +3375,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const triggerMergeBtn = document.getElementById('btn-trigger-merge-decks');
     if (triggerMergeBtn) {
         triggerMergeBtn.onclick = () => MergeDecksManager.show();
+    }
+
+    // 6.3 點擊「分割字卡夾」按鈕
+    const triggerSplitBtn = document.getElementById('btn-trigger-split-deck');
+    if (triggerSplitBtn) {
+        triggerSplitBtn.onclick = () => SplitDeckManager.show();
     }
 
     const showModal = () => {
