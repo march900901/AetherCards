@@ -63,45 +63,57 @@ function smartParseLine(line) {
     let front = '';
     let back = '';
 
-    // 1. 優先匹配顯式分隔符號：# ＃ / ／ | ｜ - — , ， : ： \t
-    const separatorRegex = /[ \t]*(?:[\t—\-‐~,，:：#＃|｜/／])[ \t]*/;
-    const parts = line.split(separatorRegex);
+    // 1. 尋找第一個「中文/日文/韓文」字元的邊界，作為單字與說明的分割點（適用於外語-中/日/韓雙語單字卡）
+    // 範圍包括：日文平假名/片假名、中日韓統一表意文字、韓文字母及音節
+    const cjkRegex = /[\u4e00-\u9fa5\u3040-\u30ff\u31f0-\u31ff\uac00-\ud7af\u1100-\u11ff]/;
+    const cjkIndex = line.search(cjkRegex);
+
+    if (cjkIndex > 0) {
+        front = line.substring(0, cjkIndex).trim();
+        back = line.substring(cjkIndex).trim();
+        
+        // 清除單字結尾或意思開頭殘留的特殊符號（保留單字中間的 / 或 , 等分隔符）
+        front = front.replace(/[\s#＃|｜\-—~:：,，/／]+$/, '').trim();
+        back = back.replace(/^[\s#＃|｜\-—~:：,，/／]+/, '').trim();
+        
+        return { front, back };
+    }
+
+    // 2. 如果沒有 CJK 字元，或者 CJK 字元在開頭 (index === 0)，則使用顯式分隔符號分割。
     
-    if (parts.length >= 2) {
-        front = parts[0].trim();
-        // 合併後面的部分，防範意思中也含有分隔符
-        back = parts.slice(1).join(' ').trim();
-        
-        // 額外清理：如果意思開頭還殘留特殊符號，將其修剪掉
+    // 優先級 A：高優先級定義分隔符號
+    const primarySeparatorRegex = /[ \t]*(?:[\t#＃|｜:：\-—~])[ \t]*/;
+    const primaryParts = line.split(primarySeparatorRegex);
+    if (primaryParts.length >= 2) {
+        front = primaryParts[0].trim();
+        back = primaryParts.slice(1).join(' ').trim();
         back = back.replace(/^[\s#＃|｜/／\-—:：,，]+/, '').trim();
+        return { front, back };
+    }
+
+    // 優先級 B：低優先級同義詞/定義分隔符號
+    const secondarySeparatorRegex = /[ \t]*(?:[,，/／])[ \t]*/;
+    const secondaryParts = line.split(secondarySeparatorRegex);
+    if (secondaryParts.length >= 2) {
+        front = secondaryParts[0].trim();
+        back = secondaryParts.slice(1).join(' ').trim();
+        back = back.replace(/^[\s#＃|｜/／\-—:：,，]+/, '').trim();
+        return { front, back };
+    }
+
+    // 3. 退回到用空格切分
+    const doubleSpaceMatch = line.split(/\s{2,}/);
+    if (doubleSpaceMatch.length >= 2) {
+        front = doubleSpaceMatch[0].trim();
+        back = doubleSpaceMatch.slice(1).join(' ').trim();
     } else {
-        // 2. 如果沒有顯式分隔符，尋找第一個「中文/日文」字元的邊界，以利智慧型辨識片語！
-        const cjkRegex = /[\u4e00-\u9fa5\u3040-\u30ff\u31f0-\u31ff]/;
-        const cjkIndex = line.search(cjkRegex);
-        
-        if (cjkIndex > 0) {
-            front = line.substring(0, cjkIndex).trim();
-            back = line.substring(cjkIndex).trim();
-            
-            // 清除單字結尾或意思開頭殘留的特殊符號（例如 "military service # 兵役" 的情況）
-            front = front.replace(/[\s#＃|｜/／\-—:：,，]+$/, '').trim();
-            back = back.replace(/^[\s#＃|｜/／\-—:：,，]+/, '').trim();
+        const singleSpaceMatch = line.split(/\s+/);
+        if (singleSpaceMatch.length >= 2) {
+            front = singleSpaceMatch[0].trim();
+            back = singleSpaceMatch.slice(1).join(' ').trim();
         } else {
-            // 3. 退回到用多個空格切分，最後是單個空格
-            const doubleSpaceMatch = line.split(/\s{2,}/);
-            if (doubleSpaceMatch.length >= 2) {
-                front = doubleSpaceMatch[0].trim();
-                back = doubleSpaceMatch.slice(1).join(' ').trim();
-            } else {
-                const singleSpaceMatch = line.split(/\s+/);
-                if (singleSpaceMatch.length >= 2) {
-                    front = singleSpaceMatch[0].trim();
-                    back = singleSpaceMatch.slice(1).join(' ').trim();
-                } else {
-                    front = line;
-                    back = '';
-                }
-            }
+            front = line;
+            back = '';
         }
     }
 
