@@ -1042,8 +1042,189 @@ const ImporterManager = {
             };
             next();
         } else {
-            saveAll();
+    }
+};
+
+// --- 7.0 合併字卡夾管理器 (Merge Decks Manager) ---
+const MergeDecksManager = {
+    show() {
+        const modal = document.getElementById('merge-decks-modal');
+        const targetSelect = document.getElementById('merge-target-select');
+        const sourcesList = document.getElementById('merge-sources-list');
+        const newDeckGroup = document.getElementById('merge-new-deck-group');
+        const newDeckNameInput = document.getElementById('merge-new-deck-name');
+        
+        // 重置欄位
+        newDeckNameInput.value = '';
+        newDeckGroup.style.display = 'block'; // 預設顯示新字卡夾名稱輸入框
+        targetSelect.value = 'new';
+        
+        // 載入所有字卡夾
+        AetherDB.getAllDecks().then(decks => {
+            // 1. 渲染目標字卡夾下拉選單
+            targetSelect.innerHTML = '<option value="new">-- 建立新的字卡夾 --</option>';
+            decks.forEach(deck => {
+                const opt = document.createElement('option');
+                opt.value = deck.id;
+                opt.textContent = deck.name;
+                targetSelect.appendChild(opt);
+            });
+            
+            // 2. 監聽下拉選單變化，若是選擇既存字卡夾，則隱藏新字卡夾名稱輸入框
+            targetSelect.onchange = () => {
+                if (targetSelect.value === 'new') {
+                    newDeckGroup.style.display = 'block';
+                    newDeckNameInput.focus();
+                } else {
+                    newDeckGroup.style.display = 'none';
+                }
+            };
+            
+            // 3. 渲染來源字卡夾多選清單
+            sourcesList.innerHTML = '';
+            if (decks.length === 0) {
+                sourcesList.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted); padding: 0.5rem;">尚未有任何字卡夾</p>';
+                return;
+            }
+            
+            decks.forEach(deck => {
+                const div = document.createElement('div');
+                div.style.display = 'flex';
+                div.style.alignItems = 'center';
+                div.style.gap = '0.5rem';
+                div.style.padding = '0.25rem 0.5rem';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = deck.id;
+                checkbox.id = `merge-src-${deck.id}`;
+                checkbox.style.cursor = 'pointer';
+                
+                const label = document.createElement('label');
+                label.htmlFor = `merge-src-${deck.id}`;
+                label.textContent = deck.name;
+                label.style.fontSize = '0.9rem';
+                label.style.color = 'var(--text-sub)';
+                label.style.cursor = 'pointer';
+                
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                sourcesList.appendChild(div);
+            });
+            
+            // 顯示 Modal
+            modal.classList.add('active');
+        });
+        
+        // 綁定取消與關閉事件
+        document.getElementById('btn-close-merge-modal').onclick = () => {
+            modal.classList.remove('active');
+        };
+        
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.classList.remove('active');
+        };
+        
+        // 綁定執行合併按鈕
+        document.getElementById('btn-execute-merge-decks').onclick = () => {
+            this.executeMerge();
+        };
+    },
+    
+    executeMerge() {
+        const targetSelect = document.getElementById('merge-target-select');
+        const newDeckNameInput = document.getElementById('merge-new-deck-name');
+        const modal = document.getElementById('merge-decks-modal');
+        
+        // 取得所有選取的來源字卡夾 ID
+        const checkboxes = document.querySelectorAll('#merge-sources-list input[type="checkbox"]:checked');
+        const sourceDeckIds = Array.from(checkboxes).map(cb => cb.value);
+        
+        if (sourceDeckIds.length === 0) {
+            alert('請至少勾選一個要合併的來源字卡夾！');
+            return;
         }
+        
+        const targetValue = targetSelect.value;
+        let targetDeckPromise;
+        let targetDeckId;
+        
+        if (targetValue === 'new') {
+            const newName = newDeckNameInput.value.trim();
+            if (!newName) {
+                alert('請輸入新字卡夾名稱！');
+                return;
+            }
+            targetDeckId = 'deck_' + Date.now();
+            const newDeck = {
+                id: targetDeckId,
+                name: newName,
+                desc: `由字卡夾合併建立：${sourceDeckIds.length} 個來源`,
+                theme: 'grad-aurora',
+                createdAt: Date.now()
+            };
+            targetDeckPromise = AetherDB.saveDeck(newDeck).then(() => newDeck);
+        } else {
+            targetDeckId = targetValue;
+            targetDeckPromise = AetherDB.getDeck(targetDeckId);
+        }
+        
+        targetDeckPromise.then(targetDeck => {
+            if (!targetDeck) {
+                alert('目標字卡夾不存在或讀取失敗！');
+                return;
+            }
+            
+            // 讀取所有來源字卡夾的卡片
+            const cardPromises = sourceDeckIds.map(srcId => AetherDB.getCardsByDeck(srcId));
+            
+            Promise.all(cardPromises).then(results => {
+                // 合併所有卡片，防範重複單字（ front 相同視為重複）
+                const seenFronts = new Set();
+                const mergedCards = [];
+                
+                // 如果是合併到既有字卡夾，先讀取目標字卡夾已有的單字，防止重複
+                const loadExistingPromise = (targetValue === 'new') 
+                    ? Promise.resolve([]) 
+                    : AetherDB.getCardsByDeck(targetDeckId);
+                    
+                loadExistingPromise.then(existingCards => {
+                    existingCards.forEach(c => seenFronts.add(c.front.toLowerCase()));
+                    
+                    results.forEach(cards => {
+                        cards.forEach(c => {
+                            const frontKey = c.front.toLowerCase();
+                            if (!seenFronts.has(frontKey)) {
+                                seenFronts.add(frontKey);
+                                // 複製卡片到目標字卡夾，更換 deckId 並生成新的 ID (防止覆蓋)
+                                const newCard = {
+                                    ...c,
+                                    id: 'card_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now(),
+                                    deckId: targetDeckId,
+                                    createdAt: Date.now()
+                                };
+                                mergedCards.push(newCard);
+                            }
+                        });
+                    });
+                    
+                    if (mergedCards.length === 0) {
+                        alert('合併完成！沒有新增任何非重複的單字卡。');
+                        modal.classList.remove('active');
+                        // 重新加載字卡夾清單
+                        AppRouter.loadDecksManager();
+                        return;
+                    }
+                    
+                    AetherDB.saveCardsBatch(mergedCards).then(() => {
+                        alert(`成功合併字卡夾！共複製了 ${mergedCards.length} 張單字卡到目標「${targetDeck.name}」中。`);
+                        modal.classList.remove('active');
+                        // 重新加載字卡夾清單
+                        AppRouter.loadDecksManager();
+                    });
+                });
+            });
+        });
     }
 };
 
@@ -1188,7 +1369,11 @@ const MatchGameManager = {
         element.classList.add('selected');
         this.selectedCards.push({ item, element });
 
-        if (state.soundEnabled) SoundFX.playFlip();
+        if (state.soundEnabled) {
+            SoundFX.playFlip();
+            const isFront = (item.type === 'front');
+            SpeechEngine.speak(item.text, SpeechEngine.detectLanguage(item.text, isFront));
+        }
 
         if (this.selectedCards.length === 2) {
             const card1 = this.selectedCards[0];
@@ -3021,6 +3206,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const openModalBtn2 = document.getElementById('btn-create-deck-dash');
     const closeModalBtn = document.getElementById('btn-close-deck-modal');
     const modalForm = document.getElementById('deck-modal-form');
+
+    // 6.2 點擊「合併字卡夾」按鈕
+    const triggerMergeBtn = document.getElementById('btn-trigger-merge-decks');
+    if (triggerMergeBtn) {
+        triggerMergeBtn.onclick = () => MergeDecksManager.show();
+    }
 
     const showModal = () => {
         deckModal.classList.add('active');
