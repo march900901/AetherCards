@@ -5,7 +5,7 @@ const ASSETS = [
   './index.html',
   './styles.css',
   './app.js',
-  './logo.svg',
+  './logo.png',
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png',
