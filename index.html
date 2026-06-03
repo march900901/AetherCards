@@ -32,15 +32,7 @@
         <!-- 電腦端：左側毛玻璃導覽列 (Sidebar) -->
         <aside class="sidebar" id="app-sidebar">
             <div class="sidebar-brand">
-                <svg class="logo-icon" viewBox="0 0 24 24" width="28" height="28">
-                    <defs>
-                        <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="var(--primary-glow)" />
-                            <stop offset="100%" stop-color="var(--accent-glow)" />
-                        </linearGradient>
-                    </defs>
-                    <path fill="url(#logo-grad)" d="M12 2c-.3 0-.6.1-.8.3L3.4 9.1c-.5.4-.5 1.2 0 1.6l7.8 6.8c.5.4 1.2.4 1.6 0l7.8-6.8c.5-.4.5-1.2 0-1.6L12.8 2.3c-.2-.2-.5-.3-.8-.3zm0 3l6 5.2-6 5.2-6-5.2L12 5zm-9 9.3l2.5 2.2L12 22l6.5-5.5 2.5-2.2c.5-.4.5-1.2 0-1.6l-1 1c0 .1-.1.2-.2.3L12 19.8l-7.8-5.8c-.1-.1-.2-.2-.2-.3l-1 1c-.5.4-.5 1.2 0 1.6z"/>
-                </svg>
+                <img src="logo.png" alt="Logo" class="logo-icon" width="28" height="28" style="border-radius: 6px;">
                 <span class="brand-text">AetherCards</span>
             </div>
             
@@ -801,8 +793,8 @@
     <!-- 全域 Google 帳號登入網關鎖屏 Overlay -->
     <div class="modal-overlay" id="google-auth-gateway" style="z-index: 9999; background: rgba(15, 23, 42, 0.98); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);">
         <div class="modal-card glass-card border-glow" style="max-width: 420px; padding: 2.5rem; text-align: center; transform: scale(1); transition: transform 0.3s ease;">
-            <div class="brand-logo-large" style="margin: 0 auto 1.5rem; display: inline-flex; justify-content: center; align-items: center; width: 64px; height: 64px; border-radius: 20px; background: linear-gradient(135deg, var(--primary-glow), var(--accent-glow)); color: #ffffff; box-shadow: 0 8px 24px rgba(99, 102, 241, 0.25);">
-                <svg viewBox="0 0 24 24" width="38" height="38"><path fill="currentColor" d="M12 2c-.3 0-.6.1-.8.3L3.4 9.1c-.5.4-.5 1.2 0 1.6l7.8 6.8c.5.4 1.2.4 1.6 0l7.8-6.8c.5-.4.5-1.2 0-1.6L12.8 2.3c-.2-.2-.5-.3-.8-.3zm0 3l6 5.2-6 5.2-6-5.2L12 5zm-9 9.3l2.5 2.2L12 22l6.5-5.5 2.5-2.2c.5-.4.5-1.2 0-1.6l-1 1c0 .1-.1.2-.2.3L12 19.8l-7.8-5.8c-.1-.1-.2-.2-.2-.3l-1 1c-.5.4-.5 1.2 0 1.6z"/></svg>
+            <div class="brand-logo-large" style="margin: 0 auto 1.5rem; display: inline-flex; justify-content: center; align-items: center; width: 64px; height: 64px; border-radius: 20px; box-shadow: 0 8px 24px rgba(99, 102, 241, 0.25);">
+                <img src="logo.png" alt="Logo" width="64" height="64" style="border-radius: 20px;">
             </div>
             <h2 style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem; font-family: 'Outfit', sans-serif;">AetherCards</h2>
             <p style="font-size: 0.95rem; color: var(--text-sub); margin-bottom: 2rem; line-height: 1.6;">歡迎使用極光單字卡！請登入您的 Google 帳號以啟用安全的雲端自動同步，並同步還原您之前的所有單字卡。</p>
