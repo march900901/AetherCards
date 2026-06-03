@@ -2,43 +2,43 @@
    AetherCards (極光單字卡) - 核心設計系統與樣式表
    ========================================================================== */
 :root {
-    /* 實體 Slate & Indigo 配色計畫 - 頂級高對比高質感 SaaS 風格 */
-    --bg-dark: #f1f5f9; /* 實體 Slate-100 畫布背景 */
-    --panel-glass: #ffffff; /* 徹底捨棄半透明，卡片一律改為「實體純白色」，絕不透色，對比度完美 */
-    --panel-glass-solid: #ffffff; /* 純白實體底板 */
-    --border-glass: #cbd5e1; /* 實體 Slate-300 邊框 (1.5px)，每個區塊邊界如同鋼鐵般分明 */
-    --border-glow-focus: rgba(99, 102, 241, 0.6); /* 更明顯的高對比聚焦環 */
+    /* 頂級深色毛玻璃極光配方 - 與 LOGO 高質感暗色完美契合 */
+    --bg-dark: #090d16; /* 深極光藍黑 */
+    --panel-glass: rgba(17, 24, 39, 0.75); /* 深色半透明玻璃板 */
+    --panel-glass-solid: #111827; /* 深石板灰實體底板 */
+    --border-glass: rgba(255, 255, 255, 0.08); /* 細緻透光邊框 */
+    --border-glow-focus: rgba(0, 242, 195, 0.6); /* 霓虹極光青聚焦環 */
     
-    /* 典雅現代石板文字色彩 (全面加深，確保完美對比) */
-    --text-main: #0f172a; /* 深石板字 ( Slate-900) - 主標題 */
-    --text-sub: #334155;  /* 中石板字 ( Slate-700) - 主要副文字，清晰可見 */
-    --text-muted: #475569; /* 灰石板字 ( Slate-600) - 輔助說明，保證高讀寫對比 */
+    /* 典雅現代石板文字色彩 (暗色專用高對比) */
+    --text-main: #f9fafb; /* 近純白 */
+    --text-sub: #e5e7eb;  /* 淺灰白，易讀 */
+    --text-muted: #9ca3af; /* 灰文字，說明使用 */
     
-    /* 莫蘭迪功能標識色 */
-    --primary-glow: #4f46e5; /* 靛藍主色 (加深為 Indigo-600) */
-    --accent-glow: #7c3aed;  /* 薰衣草紫 (加深為 Violet-600) */
-    --info-glow: #0284c7;    /* 湛藍 (Sky-700) */
-    --warning-glow: #d97706; /* 溫和黃 (Amber-700) */
-    --error-glow: #db2777;   /* 柔粉紅 (Pink-600) */
+    /* 霓虹極光功能標識色 */
+    --primary-glow: #00f2c3; /* 霓虹極光青 */
+    --accent-glow: #a855f7;  /* 夢幻紫 */
+    --info-glow: #3b82f6;    /* 湛藍 */
+    --warning-glow: #fbbf24; /* 亮黃 */
+    --error-glow: #f43f5e;   /* 玫瑰紅 */
     
-    /* 莫蘭迪漸層主題資料庫 */
-    --grad-aurora: linear-gradient(135deg, #4f46e5 0%, #818cf8 100%); /* 靛藍至淺藍 */
-    --grad-sunset: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%); /* 玫瑰紅 */
-    --grad-ocean: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);  /* 湛藍 */
-    --grad-cosmic: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); /* 紫羅蘭 */
-    --grad-forest: linear-gradient(135deg, #059669 0%, #34d399 100%); /* 薄荷綠 */
-    --grad-cyber: linear-gradient(135deg, #db2777 0%, #f472b6 100%);  /* 腮紅粉 */
+    /* 莫蘭迪漸層主題資料庫 (暗色高飽和度版) */
+    --grad-aurora: linear-gradient(135deg, #00f2c3 0%, #a855f7 100%); /* 極光至夢幻紫 */
+    --grad-sunset: linear-gradient(135deg, #f43f5e 0%, #fb923c 100%); /* 玫瑰至亮橘 */
+    --grad-ocean: linear-gradient(135deg, #38bdf8 0%, #00f2c3 100%);  /* 湛藍至極光青 */
+    --grad-cosmic: linear-gradient(135deg, #a855f7 0%, #ec4899 100%); /* 紫至粉 */
+    --grad-forest: linear-gradient(135deg, #10b981 0%, #059669 100%); /* 薄荷至翠綠 */
+    --grad-cyber: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);  /* 粉至紫 */
     
-    /* 實體主題文字配色 - 取消所有低對比度漸層裁剪，一律採用高強度深色，確保在白卡片上 100% 易讀 */
-    --theme-text-aurora: #1e1b4b; /* 深深靛藍 (Indigo-950) */
-    --theme-text-sunset: #881337; /* 深深玫瑰紅 (Rose-950) */
-    --theme-text-ocean: #075985;  /* 深深湛藍 (Sky-950) */
-    --theme-text-cosmic: #581c87; /* 深深紫羅蘭 (Purple-950) */
-    --theme-text-forest: #064e3b; /* 深深翡翠綠 (Emerald-950) */
-    --theme-text-cyber: #701a75;  /* 深深腮紅粉 (Fuchsia-950) */
+    /* 實體主題文字配色 - 暗色背景專用高易讀亮色 */
+    --theme-text-aurora: #00f2c3; /* 霓虹極光青 */
+    --theme-text-sunset: #fb923c; /* 亮橘 */
+    --theme-text-ocean: #38bdf8;  /* 湛藍 */
+    --theme-text-cosmic: #c084fc; /* 亮紫 */
+    --theme-text-forest: #34d399; /* 薄荷綠 */
+    --theme-text-cyber: #f472b6;  /* 腮紅粉 */
     
     /* 極簡控制參數 */
-    --glass-blur: blur(20px);
+    --glass-blur: blur(25px);
     --radius-sm: 10px;
     --radius-md: 18px;
     --radius-lg: 26px;
@@ -73,11 +73,11 @@ body {
     background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-    background: rgba(15, 23, 42, 0.15);
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(15, 23, 42, 0.25);
+    background: rgba(255, 255, 255, 0.25);
 }
 
 /* --- 2. 雅緻背景微弱光暈 --- */
@@ -96,8 +96,8 @@ body {
     position: absolute;
     border-radius: 50%;
     filter: blur(180px);
-    opacity: 0.06; /* 大幅降低背景光暈濃度，使其退居幕後，絕對不干擾卡片實體邊框與對比度 */
-    mix-blend-mode: multiply;
+    opacity: 0.12; /* 提高深色背景下光暈的能見度 */
+    mix-blend-mode: screen; /* 深色背景下使用 screen 混合模式以取得柔和霓虹光效 */
     animation: orb-float 20s infinite alternate ease-in-out;
 }
 
@@ -180,13 +180,13 @@ body {
 
 /* --- 4. 毛玻璃卡片與通用設計系統 --- */
 .glass-card {
-    background: var(--panel-glass); /* 實體純白背景 */
-    backdrop-filter: none; /* 移除毛玻璃以消除模糊濾鏡造成的邊緣毛糙 */
-    -webkit-backdrop-filter: none;
-    border: 1.5px solid var(--border-glass); /* 實體 1.5px Slate-300 框線，鋼鐵般分明 */
+    background: var(--panel-glass);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1.5px solid var(--border-glass);
     border-radius: var(--radius-md);
-    /* 頂級 SaaS 清爽型擴散投影 + 1px 像素邊界 */
-    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
+    /* 頂級極光暗影擴散投影 */
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), 0 1px 3px rgba(255, 255, 255, 0.02);
     padding: 1.5rem;
     transition: var(--transition-smooth);
 }
@@ -263,28 +263,28 @@ body {
 }
 
 .btn-outline {
-    background: #ffffff; /* 純實體白底板，防止透色 */
+    background: transparent;
     color: var(--text-main);
-    border: 1.5px solid #94a3b8; /* 實體 1.5px Slate-400 框線，對比度極高 */
+    border: 1.5px solid var(--border-glass);
 }
 .btn-outline:hover {
-    background: #f1f5f9; /* Hover 變為極淡灰 Slate-100 */
-    border-color: #475569; /* Slate-600 */
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--primary-glow);
     transform: translateY(-1px);
 }
 
 .btn-outline-dashed {
-    background: rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.03);
     color: var(--text-sub);
-    border: 2px dashed rgba(15, 23, 42, 0.08);
+    border: 2px dashed var(--border-glass);
     border-radius: var(--radius-md);
     padding: 1.25rem;
 }
 .btn-outline-dashed:hover {
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.08);
     border-color: var(--primary-glow);
     color: var(--text-main);
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.05);
+    box-shadow: 0 4px 15px rgba(0, 242, 195, 0.1);
 }
 
 .btn-danger {
@@ -328,8 +328,8 @@ body {
 input[type="text"],
 select,
 textarea {
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(15, 23, 42, 0.15);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-glass);
     border-radius: var(--radius-sm);
     padding: 0.75rem 1rem;
     font-family: inherit;
@@ -344,7 +344,7 @@ input[type="text"]:focus,
 select:focus,
 textarea:focus {
     border-color: var(--primary-glow);
-    background: #ffffff;
+    background: var(--panel-glass-solid);
     box-shadow: 0 0 0 4px var(--border-glow-focus);
 }
 
@@ -387,15 +387,15 @@ textarea:focus {
     left: 0;
     bottom: 0;
     width: 280px;
-    background: #ffffff; /* 實體純白背景 */
+    background: var(--panel-glass-solid);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    border-right: 1.5px solid var(--border-glass); /* 實體 1.5px Slate-300 邊線 */
+    border-right: 1.5px solid var(--border-glass);
     display: flex;
     flex-direction: column;
     padding: 2rem 1.5rem;
     z-index: 100;
-    box-shadow: 4px 0 15px rgba(15, 23, 42, 0.04);
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
 }
 
 .sidebar-brand {
@@ -408,14 +408,14 @@ textarea:focus {
 }
 
 .logo-icon {
-    filter: drop-shadow(0 2px 8px rgba(99, 102, 241, 0.2));
+    filter: drop-shadow(0 2px 8px rgba(0, 242, 195, 0.2));
 }
 
 .brand-text {
     font-size: 1.35rem;
     font-weight: 800;
     letter-spacing: -0.03em;
-    background: linear-gradient(135deg, #0f172a 0%, #475569 100%);
+    background: linear-gradient(135deg, var(--primary-glow) 0%, var(--accent-glow) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -446,12 +446,12 @@ textarea:focus {
 
 .nav-btn:hover {
     color: var(--text-main);
-    background: rgba(15, 23, 42, 0.04);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .nav-btn.active {
     color: var(--primary-glow);
-    background: rgba(99, 102, 241, 0.06);
+    background: rgba(0, 242, 195, 0.08);
     box-shadow: inset 3px 0 0 var(--primary-glow);
 }
 
@@ -1371,17 +1371,17 @@ textarea:focus {
     align-items: center;
     padding: 2.5rem;
     text-align: center;
-    border: 2px solid #cbd5e1 !important; /* 加粗為 2px 實體 Slate-300 框線，確保 3D 卡片有鋼鐵般分明的邊界 */
-    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06) !important;
+    border: 2px solid var(--border-glass) !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25) !important;
 }
 
 .flashcard-front {
-    background: #ffffff !important; /* 實體純白背景，消除漸層對比模糊 */
+    background: var(--panel-glass-solid) !important;
     z-index: 2;
 }
 
 .flashcard-back {
-    background: #ffffff !important; /* 實體純白背景，提供最高可讀性 */
+    background: var(--panel-glass-solid) !important;
     transform: rotateY(180deg); /* 預設繞 Y 軸旋轉 180 度 */
 }
 
@@ -1926,11 +1926,11 @@ textarea:focus {
         left: 0;
         right: 0;
         height: 64px;
-        background: #ffffff; /* 實體純白背景 */
+        background: var(--panel-glass-solid);
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
         border-top: 1.5px solid var(--border-glass); /* 實體 1.5px 邊界線 */
-        box-shadow: 0 -4px 15px rgba(15, 23, 42, 0.05); /* 輕盈 SaaS 陰影 */
+        box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.2);
         z-index: 999;
         justify-content: space-around;
         align-items: center;
@@ -2200,8 +2200,8 @@ textarea:focus {
 }
 
 .match-card {
-    background: #ffffff !important;
-    border: 1.5px solid #cbd5e1 !important;
+    background: var(--panel-glass) !important;
+    border: 1.5px solid var(--border-glass) !important;
     border-radius: var(--radius-md);
     padding: 1.5rem 1rem;
     min-height: 110px;
@@ -2213,7 +2213,7 @@ textarea:focus {
     font-weight: 500;
     font-size: 1rem;
     color: var(--text-main);
-    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.03) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15) !important;
     transition: transform var(--transition-spring), border-color 0.25s, box-shadow 0.25s, background-color 0.25s;
     user-select: none;
     -webkit-user-select: none;
@@ -2222,14 +2222,14 @@ textarea:focus {
 .match-card:hover {
     transform: translateY(-3px) scale(1.02);
     border-color: var(--primary-glow) !important;
-    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.08) !important;
+    box-shadow: 0 8px 20px rgba(0, 242, 195, 0.15) !important;
 }
 
 /* 被選取狀態 */
 .match-card.selected {
     border-color: var(--primary-glow) !important;
-    background: rgba(99, 102, 241, 0.05) !important;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15), 0 8px 20px rgba(99, 102, 241, 0.08) !important;
+    background: rgba(0, 242, 195, 0.08) !important;
+    box-shadow: 0 0 0 3px rgba(0, 242, 195, 0.25), 0 8px 20px rgba(0, 242, 195, 0.15) !important;
     transform: translateY(-3px) scale(1.03);
     font-weight: 700;
 }
@@ -2237,8 +2237,8 @@ textarea:focus {
 /* 配對成功消除狀態 */
 .match-card.matched {
     border-color: #10b981 !important;
-    background: rgba(16, 185, 129, 0.08) !important;
-    color: #047857 !important;
+    background: rgba(16, 185, 129, 0.15) !important;
+    color: #34d399 !important;
     transform: scale(0.9);
     opacity: 0;
     pointer-events: none;
@@ -2248,8 +2248,8 @@ textarea:focus {
 /* 配對失敗錯誤抖動 */
 .match-card.error-flash {
     border-color: var(--error-glow) !important;
-    background: rgba(239, 68, 68, 0.08) !important;
-    color: #b91c1c !important;
+    background: rgba(244, 63, 94, 0.15) !important;
+    color: #fda4af !important;
     animation: matchCardShake 0.4s ease;
 }
 
