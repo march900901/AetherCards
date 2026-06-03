@@ -1042,6 +1042,8 @@ const ImporterManager = {
             };
             next();
         } else {
+            saveAll();
+        }
     }
 };
 

@@ -1,10 +1,10 @@
 // sw.js - Service Worker for AetherCards
-const CACHE_NAME = 'aethercards-v6';
+const CACHE_NAME = 'aethercards-v7';
 const ASSETS = [
   './',
   './index.html',
   './styles.css?v=2',
-  './app.js?v=3',
+  './app.js?v=4',
   './logo.png?v=2',
   './icon-192.png',
   './icon-512.png',
