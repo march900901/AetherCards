@@ -477,45 +477,9 @@ const ImageEngine = {
     },
 
     // 智慧型背景搜圖標籤優化器
+    // 智慧型背景搜圖標籤優化器 (純前端高效率處理，節省 API 額度避免 429 錯誤)
     async getSearchKeywords(term, definition) {
         if (!term) return '';
-
-        const apiKey = state.geminiApiKey || '';
-        if (apiKey && definition) {
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-                const prompt = `Based on the vocabulary word "${term}" and its definition "${definition}", suggest 1-2 simple English words or a short phrase that represents the physical visual appearance of this concept for image search.
-We want to search for the specific physical object, action, or concept. 
-IMPORTANT: Prioritize the Chinese definition/meaning to target the correct physical object. For example:
-- If the word is "remote control" and definition is "遙控器", the target is the handheld controller device itself, so output "remote controller" or "tv remote", NOT "remote control plane" or "toy car".
-- If the word is "spring" and definition is "彈簧", output "metal spring" or "coil spring", NOT "season" or "flower".
-- If the word is "bank" and definition is "河岸", output "river bank", NOT "money bank" or "finance".
-
-Output only the English search keywords, without any punctuation, quotes, or explanations.`;
-
-                const payload = {
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { maxOutputTokens: 10, temperature: 0.2 }
-                };
-
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-                    if (text && text.length > 0 && !text.includes('Error')) {
-                        console.log(`Gemini generated search keywords for [${term} - ${definition}]:`, text);
-                        return text.toLowerCase();
-                    }
-                }
-            } catch (e) {
-                console.error('Failed to get search keywords using Gemini:', e);
-            }
-        }
 
         // 1. 如果有斜線或豎線，只取第一個主要詞組 (例如 tilt / lean / slope -> tilt)
         let clean = term.split(/[\/|｜／]/)[0].trim();
@@ -528,6 +492,7 @@ Output only the English search keywords, without any punctuation, quotes, or exp
         
         // 4. 常見片語高精準度核心詞映射 (對齊優美的 Flickr 照片庫)
         const phraseMapping = {
+            'remote control': 'remote,controller',
             'physical fitness': 'fitness',
             'nata de coco': 'coconut',
             'curly fries': 'fries',
