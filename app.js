@@ -479,7 +479,44 @@ const ImageEngine = {
     // 智慧型背景搜圖標籤優化器
     async getSearchKeywords(term, definition) {
         if (!term) return '';
-        
+
+        const apiKey = state.geminiApiKey || '';
+        if (apiKey && definition) {
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                const prompt = `Based on the vocabulary word "${term}" and its definition "${definition}", suggest 1-2 simple English words or a short phrase that represents the physical visual appearance of this concept for image search. 
+Examples:
+- Word: "spring", Definition: "n. 彈簧" -> "coil spring"
+- Word: "bark", Definition: "n. 樹皮" -> "tree bark"
+- Word: "run", Definition: "v. 跑步" -> "running"
+- Word: "collaboration", Definition: "n. 合作" -> "teamwork"
+
+Output only the English search keywords, without any punctuation, quotes, or explanations.`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { maxOutputTokens: 10, temperature: 0.2 }
+                };
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+                    if (text && text.length > 0 && !text.includes('Error')) {
+                        console.log(`Gemini generated search keywords for [${term} - ${definition}]:`, text);
+                        return text.toLowerCase();
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to get search keywords using Gemini:', e);
+            }
+        }
+
         // 1. 如果有斜線或豎線，只取第一個主要詞組 (例如 tilt / lean / slope -> tilt)
         let clean = term.split(/[\/|｜／]/)[0].trim();
         
