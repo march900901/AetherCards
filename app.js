@@ -562,10 +562,10 @@ Output only the English search keywords, without any punctuation, quotes, or exp
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
                 if (statusCallback) {
-                    if (apiKey && maxRetries > 1) {
-                        statusCallback(attempt === 1 ? `🔍 正在獲取圖片...` : `🔄 圖片不符，重新獲取中 (${attempt}/${maxRetries})...`);
+                    if (apiKey) {
+                        statusCallback(attempt === 1 ? `🔍 正在獲取圖片 (已啟用 Gemini 審查)...` : `🔄 圖片不符，重新獲取中 (${attempt}/${maxRetries})...`);
                     } else {
-                        statusCallback(`🔍 正在獲取圖片...`);
+                        statusCallback(`🔍 正在獲取圖片 (無金鑰，不進行 AI 驗證)...`);
                     }
                 }
                 
@@ -597,6 +597,10 @@ Output only the English search keywords, without any punctuation, quotes, or exp
                     return base64;
                 } else {
                     console.warn(`Gemini rejected image for [${term}] on attempt ${attempt}`);
+                    if (statusCallback) {
+                        statusCallback(`❌ 第 ${attempt} 張圖不符合字意，重新尋找...`);
+                        await new Promise(r => setTimeout(r, 600)); // 暫停一下讓使用者看得見提示
+                    }
                 }
             } catch (err) {
                 console.error(`Attempt ${attempt} failed for [${term}]:`, err);
