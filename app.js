@@ -484,7 +484,9 @@ const ImageEngine = {
         if (apiKey && definition) {
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-                const prompt = `Based on the vocabulary word "${term}" and its definition "${definition}", suggest 1-2 simple English words or a short phrase that represents the physical visual appearance of this concept for image search. 
+                const prompt = `Based on the vocabulary word "${term}" and its definition "${definition}", suggest 1-2 simple English words or a short phrase that represents the physical visual appearance of this concept for image search.
+Make sure the keywords target the specific item itself rather than a larger associated system. For example, "remote control" (遙控器) should output "remote controller" or "tv remote", NOT just "remote control car" or "toy car".
+
 Examples:
 - Word: "spring", Definition: "n. 彈簧" -> "coil spring"
 - Word: "bark", Definition: "n. 樹皮" -> "tree bark"
@@ -617,8 +619,9 @@ Output only the English search keywords, without any punctuation, quotes, or exp
             
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
             const prompt = `Determine if this image is a good, relevant visual representation for learning the vocabulary word "${term}" (definition: "${definition}"). 
-An image is a good match if it directly shows the object, action, or concept described by the word.
-An image is a bad match if it is completely unrelated, is a placeholder (like a generic error or "no image found" icon), or is extremely misleading.
+An image is a good match if it directly shows the actual object, action, or concept described by the word.
+- For concrete nouns (like "remote control" / "遙控器"), the image MUST show the actual object itself (e.g. the handheld controller with buttons). If the image only shows a toy car, a TV, or an airplane without the remote control device itself clearly visible, it is a BAD match.
+An image is a bad match if it only shows things associated with or controlled by the object, is completely unrelated, is a placeholder, or is extremely misleading.
 
 Answer exactly "YES" or "NO" in capital letters. Do not write any other words.`;
 
