@@ -485,13 +485,11 @@ const ImageEngine = {
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                 const prompt = `Based on the vocabulary word "${term}" and its definition "${definition}", suggest 1-2 simple English words or a short phrase that represents the physical visual appearance of this concept for image search.
-Make sure the keywords target the specific item itself rather than a larger associated system. For example, "remote control" (遙控器) should output "remote controller" or "tv remote", NOT just "remote control car" or "toy car".
-
-Examples:
-- Word: "spring", Definition: "n. 彈簧" -> "coil spring"
-- Word: "bark", Definition: "n. 樹皮" -> "tree bark"
-- Word: "run", Definition: "v. 跑步" -> "running"
-- Word: "collaboration", Definition: "n. 合作" -> "teamwork"
+We want to search for the specific physical object, action, or concept. 
+IMPORTANT: Prioritize the Chinese definition/meaning to target the correct physical object. For example:
+- If the word is "remote control" and definition is "遙控器", the target is the handheld controller device itself, so output "remote controller" or "tv remote", NOT "remote control plane" or "toy car".
+- If the word is "spring" and definition is "彈簧", output "metal spring" or "coil spring", NOT "season" or "flower".
+- If the word is "bank" and definition is "河岸", output "river bank", NOT "money bank" or "finance".
 
 Output only the English search keywords, without any punctuation, quotes, or explanations.`;
 
@@ -544,10 +542,9 @@ Output only the English search keywords, without any punctuation, quotes, or exp
             return phraseMapping[clean];
         }
         
-        // 5. 如果是其他片語 (含有空格)，自動提取最後一個核心單詞，確保 100% 匹配成功率
+        // 5. 如果是其他片語 (含有空格)，自動以逗號連接所有單詞，保留完整上下文
         if (clean.includes(' ')) {
-            const words = clean.split(' ');
-            return words[words.length - 1];
+            return clean.replace(/\s+/g, ',');
         }
         
         return clean;
@@ -578,7 +575,13 @@ Output only the English search keywords, without any punctuation, quotes, or exp
                     const keywords = await this.getSearchKeywords(term, definition);
                     const cleanWord = keywords.trim().replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, ',');
                     const randomLock = Math.floor(Math.random() * 100000);
-                    targetUrl = `https://loremflickr.com/300/300/${encodeURIComponent(cleanWord)}?lock=${randomLock}`;
+                    
+                    // 第一與第二次嘗試使用 /all 進行精準 AND 搜尋，最後一次嘗試退回預設 OR 搜尋以確保能出圖
+                    if (attempt < maxRetries) {
+                        targetUrl = `https://loremflickr.com/300/300/${encodeURIComponent(cleanWord)}/all?lock=${randomLock}`;
+                    } else {
+                        targetUrl = `https://loremflickr.com/300/300/${encodeURIComponent(cleanWord)}?lock=${randomLock}`;
+                    }
                 }
                 
                 base64 = await this.compressImageFromUrl(targetUrl);
@@ -623,9 +626,9 @@ Output only the English search keywords, without any punctuation, quotes, or exp
             
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
             const prompt = `Determine if this image is a good, relevant visual representation for learning the vocabulary word "${term}" (definition: "${definition}"). 
-An image is a good match if it directly shows the actual object, action, or concept described by the word.
-- For concrete nouns (like "remote control" / "遙控器"), the image MUST show the actual object itself (e.g. the handheld controller with buttons). If the image only shows a toy car, a TV, or an airplane without the remote control device itself clearly visible, it is a BAD match.
-An image is a bad match if it only shows things associated with or controlled by the object, is completely unrelated, is a placeholder, or is extremely misleading.
+An image is a good match if it directly shows the actual object, action, or concept described by the word, and it is the main focus of the image.
+- The target object MUST be the primary subject or a highly prominent focus of the image. For concrete nouns (like "remote control" / "遙控器"), the image MUST show the actual device itself as a central or prominent element (e.g. a clear view of a remote control). If the remote control is just a tiny, barely visible box in a person's hand where the main focus of the image is a plane, car, or field, it is a BAD match.
+An image is a bad match if it only shows things associated with or controlled by the object, if the object is too small or hard to see, or if it is a placeholder or irrelevant.
 
 Answer exactly "YES" or "NO" in capital letters. Do not write any other words.`;
 
