@@ -9,6 +9,7 @@ const state = {
     activeDeckId: null, // 當前操作的字卡夾 ID
     streakDays: 0,      // 連續學習天數
     soundEnabled: true, // 音效開關
+    geminiApiKey: localStorage.getItem('gemini_api_key') || '',
     
     // Google Drive 雲端同步狀態
     googleAccessToken: null,
@@ -511,6 +512,121 @@ const ImageEngine = {
         }
         
         return clean;
+    },
+
+    // 智慧型下載、驗證與重試主流程
+    async fetchAndVerifyImage(term, definition, type = 'search', statusCallback = null) {
+        const apiKey = state.geminiApiKey || '';
+        const maxRetries = apiKey ? 3 : 1;
+        let base64 = null;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                if (statusCallback) {
+                    if (apiKey && maxRetries > 1) {
+                        statusCallback(attempt === 1 ? `🔍 正在獲取圖片...` : `🔄 圖片不符，重新獲取中 (${attempt}/${maxRetries})...`);
+                    } else {
+                        statusCallback(`🔍 正在獲取圖片...`);
+                    }
+                }
+                
+                let targetUrl = '';
+                if (type === 'generate') {
+                    const seed = Math.floor(Math.random() * 10000);
+                    const safePrompt = encodeURIComponent(term.trim() + ' simple vibrant flat vector learning illustration card, white background');
+                    targetUrl = `https://image.pollinations.ai/p/${safePrompt}?width=300&height=300&nologo=true&seed=${seed}`;
+                } else {
+                    const keywords = await this.getSearchKeywords(term, definition);
+                    const cleanWord = keywords.trim().replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, ',');
+                    const randomLock = Math.floor(Math.random() * 100000);
+                    targetUrl = `https://loremflickr.com/300/300/${encodeURIComponent(cleanWord)}?lock=${randomLock}`;
+                }
+                
+                base64 = await this.compressImageFromUrl(targetUrl);
+                
+                if (!apiKey) {
+                    return base64; // 無 API Key，直接回傳首張圖
+                }
+                
+                if (statusCallback) {
+                    statusCallback(`🤖 AI 正在審查第 ${attempt} 張圖...`);
+                }
+                
+                const isValid = await this.verifyWithGemini(apiKey, term, definition, base64);
+                if (isValid) {
+                    console.log(`Gemini approved image for [${term}] on attempt ${attempt}`);
+                    return base64;
+                } else {
+                    console.warn(`Gemini rejected image for [${term}] on attempt ${attempt}`);
+                }
+            } catch (err) {
+                console.error(`Attempt ${attempt} failed for [${term}]:`, err);
+                if (attempt === maxRetries && base64) {
+                    return base64;
+                }
+            }
+        }
+        
+        return base64;
+    },
+
+    // 呼叫 Gemini Vision API 進行多模態審查
+    async verifyWithGemini(apiKey, term, definition, base64DataUrl) {
+        try {
+            const base64Parts = base64DataUrl.split(',');
+            if (base64Parts.length < 2) return true;
+            const mimeType = base64Parts[0].match(/:(.*?);/)[1];
+            const base64Data = base64Parts[1];
+            
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const prompt = `Determine if this image is a good, relevant visual representation for learning the vocabulary word "${term}" (definition: "${definition}"). 
+An image is a good match if it directly shows the object, action, or concept described by the word.
+An image is a bad match if it is completely unrelated, is a placeholder (like a generic error or "no image found" icon), or is extremely misleading.
+
+Answer exactly "YES" or "NO" in capital letters. Do not write any other words.`;
+
+            const payload = {
+                contents: [
+                    {
+                        parts: [
+                            {
+                                text: prompt
+                            },
+                            {
+                                inlineData: {
+                                    mimeType: mimeType,
+                                    data: base64Data
+                                }
+                            }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    maxOutputTokens: 5,
+                    temperature: 0.1
+                }
+            };
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) {
+                console.warn('Gemini API request failed:', response.status, await response.text());
+                return true;
+            }
+            
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim()?.toUpperCase();
+            return text === 'YES';
+        } catch (e) {
+            console.error('Gemini verification error:', e);
+            return true;
+        }
     }
 };
 
@@ -723,31 +839,29 @@ const EditorManager = {
         }
 
         try {
-            let targetUrl = '';
-            if (type === 'generate') {
-                targetUrl = ImageEngine.getAiGenerateUrl(term);
-            } else {
-                // 背景智慧型翻譯定義並取得逗號標籤
-                const keywords = await ImageEngine.getSearchKeywords(term, row.definition);
-                targetUrl = ImageEngine.getAiSearchUrl(keywords);
-            }
-
-            const base64 = await ImageEngine.compressImageFromUrl(targetUrl);
-            row.image = base64;
-            // 更新預覽 (保留 loadingIndicator 不被 innerHTML 覆蓋刪除)
-            const thumbnail = document.getElementById(`preview-thumbnail-${rowId}`);
-            if (thumbnail) {
-                let img = thumbnail.querySelector('img');
-                if (!img) {
-                    img = document.createElement('img');
-                    img.alt = '插圖';
-                    // 移除 "尚未配圖" 的純文字提示
-                    const tip = thumbnail.querySelector('.no-image-tip');
-                    if (tip) tip.remove();
-                    // 在最前端插入新圖片元素，使 loadingIndicator 仍留在後方
-                    thumbnail.insertBefore(img, thumbnail.firstChild);
+            const base64 = await ImageEngine.fetchAndVerifyImage(term, row.definition, type, (statusText) => {
+                if (loadingIndicator) {
+                    loadingIndicator.textContent = statusText;
                 }
-                img.src = base64;
+            });
+
+            if (base64) {
+                row.image = base64;
+                // 更新預覽 (保留 loadingIndicator 不被 innerHTML 覆蓋刪除)
+                const thumbnail = document.getElementById(`preview-thumbnail-${rowId}`);
+                if (thumbnail) {
+                    let img = thumbnail.querySelector('img');
+                    if (!img) {
+                        img = document.createElement('img');
+                        img.alt = '插圖';
+                        // 移除 "尚未配圖" 的純文字提示
+                        const tip = thumbnail.querySelector('.no-image-tip');
+                        if (tip) tip.remove();
+                        // 在最前端插入新圖片元素，使 loadingIndicator 仍留在後方
+                        thumbnail.insertBefore(img, thumbnail.firstChild);
+                    }
+                    img.src = base64;
+                }
             }
         } catch (err) {
             console.error('AI 配圖失敗: ', err);
@@ -1025,14 +1139,14 @@ const ImporterManager = {
 
                 const card = queue.shift();
                 completed++;
-                btn.textContent = `🔍 正在 AI 搜圖 [${card.front}] (${completed}/${total})...`;
 
                 try {
-                    // 背景智慧型翻譯定義並取得逗號標籤
-                    const keywords = await ImageEngine.getSearchKeywords(card.front, card.back);
-                    const searchUrl = ImageEngine.getAiSearchUrl(keywords);
-                    const base64 = await ImageEngine.compressImageFromUrl(searchUrl);
-                    card.image = base64;
+                    const base64 = await ImageEngine.fetchAndVerifyImage(card.front, card.back, 'search', (statusText) => {
+                        btn.textContent = `[${completed}/${total}] ${statusText} [${card.front}]`;
+                    });
+                    if (base64) {
+                        card.image = base64;
+                    }
                 } catch (err) {
                     console.warn(`單字 [${card.front}] AI 配圖失敗（跳過）:`, err);
                 } finally {
@@ -2443,6 +2557,19 @@ const CloudSyncManager = {
     syncPending: false,
     syncPendingSilent: true,
 
+    // 檢查本地資料庫是否為空或只有預設範例字卡
+    async isLocalOnlySampleOrEmpty() {
+        try {
+            const decks = await AetherDB.getAllDecks();
+            if (decks.length === 0) return true;
+            if (decks.length === 1 && decks[0].id === 'deck_sample_1') return true;
+            return false;
+        } catch (e) {
+            console.error('Failed to get decks in isLocalOnlySampleOrEmpty:', e);
+            return false;
+        }
+    },
+
     // 初始化 GIS SDK
     init() {
         const cachedToken = localStorage.getItem('google_access_token');
@@ -2795,6 +2922,7 @@ const CloudSyncManager = {
             
             // 2. 獲取本地最近更新時間戳
             const localLastUpdated = parseInt(localStorage.getItem('aethercards_local_last_updated') || '0');
+            const neverSyncedBefore = !localStorage.getItem('google_last_sync_time');
 
             // 3. 分流處理
             if (!fileId) {
@@ -2806,6 +2934,26 @@ const CloudSyncManager = {
                 
                 if (cloudData) {
                     const cloudLastUpdated = cloudData.lastUpdated || 0;
+
+                    // 處理第一次登入同步的特殊情況 (防止被 Seeds 範例資料的最新時間戳誤導而覆蓋雲端)
+                    if (neverSyncedBefore) {
+                        const localClean = await this.isLocalOnlySampleOrEmpty();
+                        if (localClean) {
+                            console.log('第一次登入，且本地為空或僅有範例資料，直接還原雲端資料...');
+                            await this.restoreCloudData(cloudData, true);
+                            return;
+                        } else {
+                            // 本地有自訂資料，詢問使用者如何處理衝突
+                            const confirmRestore = confirm(`偵測到您在 Google Drive 雲端有已存在的字卡備份，但此設備也有新建的自訂字卡夾。\n\n是否要「載入雲端備份」並覆蓋此設備的內容？\n(注意：這將會覆蓋本機目前的資料；若選擇「否」，則會把本機資料上傳覆蓋雲端備份)`);
+                            if (confirmRestore) {
+                                await this.restoreCloudData(cloudData, false);
+                            } else {
+                                this.updateLocalTimestamp();
+                                await this.uploadBackup(fileId);
+                            }
+                            return;
+                        }
+                    }
 
                     if (cloudLastUpdated > localLastUpdated) {
                         // 雲端資料較新 ➔ 下載還原
@@ -3817,6 +3965,21 @@ window.addEventListener('DOMContentLoaded', () => {
             soundBtn.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" class="sound-icon-off"><path fill="currentColor" d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`;
         }
     };
+
+    // 14.2 Gemini API 金鑰儲存與初始化
+    const geminiInput = document.getElementById('setting-gemini-key');
+    const saveGeminiBtn = document.getElementById('btn-save-gemini-key');
+    if (geminiInput) {
+        geminiInput.value = state.geminiApiKey;
+    }
+    if (saveGeminiBtn && geminiInput) {
+        saveGeminiBtn.onclick = () => {
+            const keyVal = geminiInput.value.trim();
+            state.geminiApiKey = keyVal;
+            localStorage.setItem('gemini_api_key', keyVal);
+            alert('Gemini API 金鑰儲存成功！');
+        };
+    }
 
     // 清除全部資料危險操作
     document.getElementById('btn-danger-clear').onclick = () => {

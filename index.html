@@ -677,6 +677,21 @@
                         </div>
                     </div>
 
+                    <!-- Gemini AI 智慧功能設定板塊 -->
+                    <div class="glass-card settings-card border-glow">
+                        <h3>🤖 Gemini AI 智慧功能設定</h3>
+                        <p class="settings-desc">輸入您的 Gemini API 金鑰 (API Key) 以啟用雙向圖片精準驗證與高精度單字翻譯功能。如果未輸入金鑰，系統將直接採用預設搜圖結果且不進行 AI 驗證。</p>
+                        
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label for="setting-gemini-key">Gemini API 金鑰</label>
+                            <input type="password" id="setting-gemini-key" placeholder="請在此輸入以 sk- 或 AIzaSy 開頭的 Gemini API Key..." style="width: 100%;">
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                            <span>沒有金鑰？可至 <a href="https://aistudio.google.com/" target="_blank" style="color: var(--primary-glow); text-decoration: underline;">Google AI Studio</a> 免費申請。</span>
+                            <button class="btn btn-sm btn-primary" id="btn-save-gemini-key" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">儲存金鑰</button>
+                        </div>
+                    </div>
+
                     <!-- 資料清理板塊 -->
                     <div class="glass-card settings-card border-glow border-danger">
                         <h3 class="text-danger">⚠️ 危險區域</h3>
