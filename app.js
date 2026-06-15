@@ -483,7 +483,7 @@ const ImageEngine = {
         const apiKey = state.geminiApiKey || '';
         if (apiKey && definition) {
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
                 const prompt = `Based on the vocabulary word "${term}" and its definition "${definition}", suggest 1-2 simple English words or a short phrase that represents the physical visual appearance of this concept for image search.
 We want to search for the specific physical object, action, or concept. 
 IMPORTANT: Prioritize the Chinese definition/meaning to target the correct physical object. For example:
@@ -624,7 +624,7 @@ Output only the English search keywords, without any punctuation, quotes, or exp
             const mimeType = base64Parts[0].match(/:(.*?);/)[1];
             const base64Data = base64Parts[1];
             
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
             const prompt = `Determine if this image is a good, relevant visual representation for learning the vocabulary word "${term}" (definition: "${definition}"). 
 An image is a good match if it directly shows the actual object, action, or concept described by the word, and it is the main focus of the image.
 - The target object MUST be the primary subject or a highly prominent focus of the image. For concrete nouns (like "remote control" / "遙控器"), the image MUST show the actual device itself as a central or prominent element (e.g. a clear view of a remote control). If the remote control is just a tiny, barely visible box in a person's hand where the main focus of the image is a plane, car, or field, it is a BAD match.
