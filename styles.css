@@ -2454,3 +2454,36 @@ textarea:focus {
 #btn-delete-deck:active {
     transform: translateY(0);
 }
+
+/* --- 15. AI 造句練習相關樣式 --- */
+#sentence-feedback-box {
+    border: 1.5px solid transparent;
+    transition: all 0.3s ease;
+}
+
+#sentence-feedback-box.feedback-correct {
+    background: rgba(0, 242, 195, 0.08) !important;
+    border-color: var(--primary-glow) !important;
+    color: #e2e8f0;
+    box-shadow: 0 4px 15px rgba(0, 242, 195, 0.15);
+}
+
+#sentence-feedback-box.feedback-incorrect {
+    background: rgba(244, 63, 94, 0.08) !important;
+    border-color: var(--error-glow) !important;
+    color: #e2e8f0;
+    box-shadow: 0 4px 15px rgba(244, 63, 94, 0.15);
+}
+
+#sentence-feedback-box.feedback-loading {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--text-sub);
+    border-style: dashed;
+    text-align: center;
+}
+
+#sentence-input-field:focus {
+    border-color: var(--accent-glow) !important;
+    box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.25) !important;
+}

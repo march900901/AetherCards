@@ -3126,6 +3126,251 @@ const CloudSyncManager = {
     }
 };
 
+// --- 8.8 AI 造句練習引擎 (AI Sentence Practice) ---
+const SentencePracticeManager = {
+    cards: [],
+    currentIndex: 0,
+    correctCount: 0,
+    incorrectCount: 0,
+    isSubmitting: false,
+
+    init(cards) {
+        if (!state.geminiApiKey) {
+            alert('請先到「設定」頁面設定您的 Gemini API 金鑰，才能使用 AI 造句功能！');
+            AppRouter.navigateTo('deck-detail', state.activeDeckId);
+            return;
+        }
+
+        if (cards.length === 0) {
+            alert('此字卡夾中還沒有單字，請先新增單字！');
+            AppRouter.navigateTo('deck-detail', state.activeDeckId);
+            return;
+        }
+
+        this.cards = [...cards].sort(() => Math.random() - 0.5); // 隨機排序
+        this.currentIndex = 0;
+        this.correctCount = 0;
+        this.incorrectCount = 0;
+        this.isSubmitting = false;
+
+        // 重置 UI 狀態
+        document.getElementById('sentence-active-box').style.display = 'block';
+        document.getElementById('sentence-end-box').style.display = 'none';
+        document.getElementById('sentence-input-field').value = '';
+        document.getElementById('sentence-input-field').disabled = false;
+        document.getElementById('btn-sentence-submit').style.display = 'block';
+        document.getElementById('btn-sentence-next').style.display = 'none';
+        
+        const feedbackBox = document.getElementById('sentence-feedback-box');
+        feedbackBox.style.display = 'none';
+        feedbackBox.className = '';
+        feedbackBox.innerHTML = '';
+
+        this.updateUI();
+        this.bindEvents();
+    },
+
+    updateUI() {
+        const card = this.cards[this.currentIndex];
+        const total = this.cards.length;
+
+        // 更新進度與單字
+        document.getElementById('sentence-current-idx').textContent = this.currentIndex + 1;
+        document.getElementById('sentence-total-count').textContent = total;
+        document.getElementById('sentence-progress-bar').style.width = `${((this.currentIndex) / total) * 100}%`;
+
+        document.getElementById('sentence-card-term').textContent = card.front;
+        document.getElementById('sentence-card-def').textContent = card.back;
+
+        // 清空並聚焦輸入框
+        document.getElementById('sentence-input-field').value = '';
+        document.getElementById('sentence-input-field').disabled = false;
+        document.getElementById('btn-sentence-submit').style.display = 'block';
+        document.getElementById('btn-sentence-next').style.display = 'none';
+
+        const feedbackBox = document.getElementById('sentence-feedback-box');
+        feedbackBox.style.display = 'none';
+        feedbackBox.className = '';
+        feedbackBox.innerHTML = '';
+
+        // 聚焦輸入框 (延遲一下確保 View 已完全切換)
+        setTimeout(() => {
+            document.getElementById('sentence-input-field').focus();
+        }, 100);
+    },
+
+    bindEvents() {
+        // AI 評分按鈕
+        document.getElementById('btn-sentence-submit').onclick = () => this.handleSubmit();
+
+        // 下一題按鈕
+        document.getElementById('btn-sentence-next').onclick = () => this.handleNext();
+
+        // 退出按鈕
+        document.getElementById('btn-quit-sentence').onclick = () => {
+            if (confirm('確定要退出 AI 造句練習嗎？這將不會記錄本次成績。')) {
+                AppRouter.navigateTo('deck-detail', state.activeDeckId);
+            }
+        };
+
+        // 結束頁面：再試一次
+        document.getElementById('btn-sentence-retry').onclick = () => {
+            this.init(this.cards);
+        };
+
+        // 結束頁面：返回字卡夾
+        document.getElementById('btn-sentence-back').onclick = () => {
+            AppRouter.navigateTo('deck-detail', state.activeDeckId);
+        };
+    },
+
+    async handleSubmit() {
+        if (this.isSubmitting) return;
+
+        const sentence = document.getElementById('sentence-input-field').value.trim();
+        if (!sentence) {
+            alert('請先輸入造句！');
+            return;
+        }
+
+        const card = this.cards[this.currentIndex];
+        const apiKey = state.geminiApiKey || '';
+
+        this.isSubmitting = true;
+        document.getElementById('sentence-input-field').disabled = true;
+        
+        const feedbackBox = document.getElementById('sentence-feedback-box');
+        feedbackBox.style.display = 'block';
+        feedbackBox.className = 'feedback-loading';
+        feedbackBox.innerHTML = '🤖 AI 正在評估您的句子，請稍候...';
+
+        try {
+            const result = await this.evaluateSentenceWithGemini(apiKey, card.front, card.back, sentence);
+            
+            feedbackBox.className = result.isCorrect ? 'feedback-correct' : 'feedback-incorrect';
+            
+            let html = `<strong>結果：${result.isCorrect ? '✅ 正確 (已掌握)' : '❌ 仍需複習'}</strong><br>`;
+            html += `<p style="margin: 0.5rem 0 0 0;">${result.explanation}</p>`;
+            if (result.suggestion) {
+                html += `<p style="margin: 0.5rem 0 0 0; font-style: italic; opacity: 0.9;">💡 建議寫法：${result.suggestion}</p>`;
+            }
+            feedbackBox.innerHTML = html;
+
+            // 更新單字掌握度並存入資料庫
+            card.mastered = result.isCorrect;
+            card.reviews = (card.reviews || 0) + 1;
+            await AetherDB.saveCard(card);
+
+            // 計數器更新
+            if (result.isCorrect) {
+                this.correctCount++;
+                if (state.soundEnabled) SoundFX.playSuccess();
+            } else {
+                this.incorrectCount++;
+                if (state.soundEnabled) SoundFX.playFailure();
+            }
+
+            // 更新按鈕狀態
+            document.getElementById('btn-sentence-submit').style.display = 'none';
+            document.getElementById('btn-sentence-next').style.display = 'block';
+            document.getElementById('btn-sentence-next').focus();
+
+        } catch (err) {
+            console.error('AI sentence evaluation failed:', err);
+            feedbackBox.className = 'feedback-incorrect';
+            feedbackBox.innerHTML = `⚠️ 評估失敗，原因：${err.message || '網路逾時或 API Key 異常'}。請點擊按鈕重試。`;
+            document.getElementById('sentence-input-field').disabled = false;
+        } finally {
+            this.isSubmitting = false;
+        }
+    },
+
+    handleNext() {
+        const total = this.cards.length;
+        if (this.currentIndex + 1 < total) {
+            this.currentIndex++;
+            this.updateUI();
+        } else {
+            // 完成所有單字，顯示結束面版
+            document.getElementById('sentence-active-box').style.display = 'none';
+            document.getElementById('sentence-end-box').style.display = 'block';
+            
+            // 更新進度條至 100%
+            document.getElementById('sentence-progress-bar').style.width = '100%';
+
+            // 填入分數
+            document.getElementById('sentence-score-correct').textContent = this.correctCount;
+            document.getElementById('sentence-score-incorrect').textContent = this.incorrectCount;
+        }
+    },
+
+    async evaluateSentenceWithGemini(apiKey, word, definition, sentence) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+        
+        const prompt = `You are an English teacher evaluating a student's sentence writing practice.
+Analyze if the student's sentence correctly uses the vocabulary word "${word}" (definition: "${definition}").
+
+Evaluation criteria:
+1. The sentence must use the word "${word}" (or its grammatically correct inflections/forms, e.g. plurals, verb tenses).
+2. The sentence must be grammatically correct and contextually coherent.
+3. The sentence must apply the correct semantic meaning corresponding to the definition "${definition}". For example, if the word is "bark" (definition: "樹皮"), a sentence about a dog barking is INCORRECT.
+
+Return a JSON object with the following fields:
+- "isCorrect": boolean (true if the sentence meets all criteria, false otherwise)
+- "explanation": string in Traditional Chinese (a brief explanation of why it is correct or what errors were made, like grammar or word usage)
+- "suggestion": string (a corrected or improved version of the sentence, or a sample sentence if the input is completely wrong. If the input is correct, suggest a more natural way to write it, or leave it empty).
+
+Do not return any markdown formatting (no \`\`\`json blocks), output only the raw JSON string.`;
+
+        const payload = {
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+                responseMimeType: "application/json",
+                maxOutputTokens: 250,
+                temperature: 0.1
+            }
+        };
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            if (response.status === 429) {
+                throw new Error('AI 評估額度超限，請於一分鐘後重試');
+            }
+            throw new Error(`API 錯誤 (代碼 ${response.status})`);
+        }
+
+        const data = await response.json();
+        let text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (!text) {
+            throw new Error('AI 回傳空結果');
+        }
+
+        // 清理可能被包裹的 Markdown json 區塊
+        if (text.startsWith("```json")) {
+            text = text.substring(7);
+        }
+        if (text.startsWith("```")) {
+            text = text.substring(3);
+        }
+        if (text.endsWith("```")) {
+            text = text.substring(0, text.length - 3);
+        }
+        text = text.trim();
+
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error('Failed to parse Gemini response as JSON:', text, e);
+            throw new Error('無法解析 AI 評語格式');
+        }
+    }
+};
+
 // --- 11. SPA 頁面路由切換系統 ---
 const AppRouter = {
     init() {
@@ -3203,6 +3448,9 @@ const AppRouter = {
         } else if (viewName === 'match') {
             // params 代表要進行連連看配對的單字卡陣列
             MatchGameManager.init(params);
+        } else if (viewName === 'sentence') {
+            // params 代表要進行造句練習的單字卡陣列
+            SentencePracticeManager.init(params);
         }
         
         // 滾動回到頂端
@@ -3361,16 +3609,19 @@ const AppRouter = {
                     // 禁用學習測驗按鈕
                     document.getElementById('btn-start-study').disabled = true;
                     document.getElementById('btn-start-quiz').disabled = true;
+                    document.getElementById('btn-start-sentence').disabled = true;
                     return;
                 }
 
                 // 啟用學習測驗按鈕
                 document.getElementById('btn-start-study').disabled = false;
                 document.getElementById('btn-start-quiz').disabled = false;
+                document.getElementById('btn-start-sentence').disabled = false;
 
                 // 綁定複習與測驗按鈕事件 (傳入對應卡片陣列)
                 document.getElementById('btn-start-study').onclick = () => this.navigateTo('study', cards);
                 document.getElementById('btn-start-quiz').onclick = () => QuizSelectModalManager.show(cards);
+                document.getElementById('btn-start-sentence').onclick = () => this.navigateTo('sentence', cards);
                 document.getElementById('btn-edit-deck-structure').onclick = () => this.navigateTo('creator', deck);
 
                 // 渲染單字卡列表

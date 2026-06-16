@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=9">
+    <link rel="stylesheet" href="styles.css?v=10">
     <!-- PWA Manifest & App Icons -->
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="logo.png?v=2">
@@ -197,6 +197,10 @@
                         <button class="btn btn-action s-bg" id="btn-start-quiz">
                             <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                             測驗
+                        </button>
+                        <button class="btn btn-action" id="btn-start-sentence" style="background: linear-gradient(135deg, #bd5cfa 0%, #6366f1 100%); color: white; border: none; box-shadow: 0 4px 15px rgba(189, 92, 250, 0.35);">
+                            <svg viewBox="0 0 24 24" width="20" height="20" style="vertical-align: middle; margin-right: 4px;"><path fill="currentColor" d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+                            AI 造句
                         </button>
                         <button class="btn btn-action-outline" id="btn-edit-deck-structure">
                             編輯/新增字卡
@@ -593,6 +597,84 @@
                 </div>
             </section>
 
+            <!-- VIEW 10: AI 造句練習模式 (AI Sentence View) -->
+            <section class="app-view" id="view-sentence">
+                <div class="study-header">
+                    <div class="study-header-top">
+                        <button class="btn-back" id="btn-quit-sentence">
+                            <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                            退出造句
+                        </button>
+                    </div>
+                    <div class="study-progress-container">
+                        <span class="study-counter"><span id="sentence-current-idx">1</span> / <span id="sentence-total-count">0</span></span>
+                        <div class="progress-track">
+                            <div class="progress-bar-fill" id="sentence-progress-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 練習進行中區塊 -->
+                <div id="sentence-active-box" style="width: 100%; max-width: 580px; margin: 1rem auto 2rem auto;">
+                    <div class="glass-card border-glow" style="padding: 2.5rem; display: flex; flex-direction: column; gap: 1.5rem;">
+                        <span class="card-side-tag" style="text-align: center;">AI 造句練習</span>
+                        
+                        <div style="text-align: center;">
+                            <h2 class="card-term" id="sentence-card-term" style="font-size: 2.5rem; margin-bottom: 0.5rem;">Word</h2>
+                            <p class="card-phonetic" id="sentence-card-def" style="font-size: 1.25rem; color: var(--text-sub);">Definition</p>
+                        </div>
+
+                        <!-- 句子輸入區 -->
+                        <div class="form-group" style="margin-top: 1rem; width: 100%;">
+                            <label for="sentence-input-field" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-main);">請用該單字造一個英文句子：</label>
+                            <textarea id="sentence-input-field" rows="3" class="form-control" placeholder="在此輸入您的造句... (注意：句子中必須包含該單字或其合法的字形變化，例如複數或動詞變化)" style="width: 100%; resize: vertical; box-sizing: border-box;"></textarea>
+                        </div>
+
+                        <!-- AI 評價結果顯示區 -->
+                        <div id="sentence-feedback-box" style="display: none; padding: 1.25rem; border-radius: var(--radius-md); font-size: 0.95rem; line-height: 1.5;">
+                            <!-- 動態填充結果 -->
+                        </div>
+
+                        <!-- 操作按鈕 -->
+                        <div style="display: flex; gap: 1rem; margin-top: 1rem; width: 100%;">
+                            <button class="btn btn-primary" id="btn-sentence-submit" style="flex: 1;">
+                                🤖 AI 評分
+                            </button>
+                            <button class="btn btn-secondary" id="btn-sentence-next" style="flex: 1; display: none;">
+                                下一題 ➔
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 練習結束畫面 -->
+                <div id="sentence-end-box" style="display: none; width: 100%; max-width: 580px; margin: 1rem auto 2rem auto;">
+                    <div class="glass-card border-glow" style="padding: 3rem 2rem; text-align: center; display: flex; flex-direction: column; gap: 1.5rem; align-items: center;">
+                        <div style="font-size: 4rem;">🎉</div>
+                        <h2>練習完成！</h2>
+                        <p style="color: var(--text-sub); font-size: 1.1rem;">您已完成了此字卡夾的所有單字造句練習。</p>
+                        
+                        <div style="margin: 1.5rem 0; width: 100%;">
+                            <div style="display: flex; justify-content: space-around; margin-bottom: 1.5rem;">
+                                <div>
+                                    <div style="font-size: 1.75rem; font-weight: 700; color: var(--success-glow);" id="sentence-score-correct">0</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">造句正確 (已掌握)</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.75rem; font-weight: 700; color: var(--error-glow);" id="sentence-score-incorrect">0</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">仍需複習 (需複習)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 1rem; width: 100%;">
+                            <button class="btn btn-primary" id="btn-sentence-retry" style="flex: 1;">再試一次</button>
+                            <button class="btn btn-secondary" id="btn-sentence-back" style="flex: 1;">返回字卡夾</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- VIEW 8: 備份與設定 (Settings View) -->
             <section class="app-view" id="view-settings">
                 <div class="view-header">
@@ -901,6 +983,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=9"></script>
+    <script src="app.js?v=10"></script>
 </body>
 </html>
