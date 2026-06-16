@@ -951,92 +951,28 @@ textarea:focus {
     margin-top: 1rem;
 }
 
-/* 單字卡 3D 翻轉核心結構 */
-.word-item-card-scene {
-    perspective: 1000px;
-    height: 180px; /* 統一卡片高度，使網格排版極為整齊 */
-    cursor: pointer;
-    position: relative;
-}
-
-.word-item-card-inner {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    transform-style: preserve-3d;
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.word-item-card-inner.flipped {
-    transform: rotateY(180deg);
-}
-
-/* 正面與背面基礎屬性 */
-.word-item-card-front,
-.word-item-card-back {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
+.word-item-card {
     display: flex;
     flex-direction: column;
-    box-sizing: border-box;
-    margin: 0 !important;
+    gap: 0.75rem;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.25s ease;
 }
 
-/* 正面版面 */
-.word-item-card-front {
-    justify-content: space-between;
-    z-index: 2;
+.word-item-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px 0 rgba(0, 0, 0, 0.4), 0 2px 4px rgba(255, 255, 255, 0.04);
 }
 
-/* 背面版面 */
-.word-item-card-back {
-    transform: rotateY(180deg);
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-/* 翻轉後的英文標題 */
-.word-back-title {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--primary-glow);
-    opacity: 0.95;
-    margin-bottom: 0.25rem;
-}
-
-/* 翻轉提示徽章 */
-.flip-hint-badge {
-    position: absolute;
-    bottom: 0.75rem;
-    right: 1.25rem;
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    opacity: 0.5;
-    display: flex;
-    align-items: center;
-    pointer-events: none;
-    transition: opacity 0.3s ease, color 0.3s ease;
-}
-
-.word-item-card-scene:hover .flip-hint-badge {
-    opacity: 0.95;
-    color: var(--primary-glow);
-}
-
-/* 掌握與學習中徽章 */
-.word-item-card-scene .master-badge {
+.word-item-card .master-badge {
     position: absolute;
     top: 1rem;
     right: 1rem;
-    font-size: 0.72rem;
-    padding: 0.2rem 0.45rem;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
     border-radius: 4px;
     font-weight: 600;
-    z-index: 10;
 }
 
 .badge-mastered {
