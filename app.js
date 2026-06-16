@@ -3626,33 +3626,54 @@ const AppRouter = {
 
                 // 渲染單字卡列表
                 cards.forEach(card => {
-                    const cardDiv = document.createElement('div');
-                    cardDiv.className = 'glass-card word-item-card border-glow';
+                    const sceneDiv = document.createElement('div');
+                    sceneDiv.className = 'word-item-card-scene';
                     
                     const badgeClass = card.mastered ? 'badge-mastered' : 'badge-learning';
                     const badgeText = card.mastered ? '已掌握' : '學習中';
 
-                    cardDiv.innerHTML = `
-                        <span class="master-badge ${badgeClass}">${badgeText}</span>
-                        <div class="card-item-header">
-                            <div class="card-item-thumbnail">
-                                ${card.image ? `<img src="${card.image}" alt="縮圖">` : `
-                                    <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.03); color:var(--text-muted)">
-                                        <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                    sceneDiv.innerHTML = `
+                        <div class="word-item-card-inner">
+                            <!-- 正面 -->
+                            <div class="word-item-card-front glass-card border-glow">
+                                <span class="master-badge ${badgeClass}">${badgeText}</span>
+                                <div class="card-item-header">
+                                    <div class="card-item-thumbnail">
+                                        ${card.image ? `<img src="${card.image}" alt="縮圖">` : `
+                                            <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.03); color:var(--text-muted)">
+                                                <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                                            </div>
+                                        `}
                                     </div>
-                                `}
+                                    <div class="card-item-title-box">
+                                        <h4>${card.front}</h4>
+                                        <p>${card.hint ? `音標/提示: [${card.hint}]` : '無發音提示'}</p>
+                                    </div>
+                                </div>
+                                <div class="flip-hint-badge">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align: middle; margin-right: 4px; display: inline-block;"><path fill="currentColor" d="M19 8l-4 4h3c0 3.31-2.69 6-6 6-1.01 0-1.97-.25-2.8-.7l-1.46 1.46C8.97 19.54 10.43 20 12 20c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 1.01 0 1.97.25 2.8.7l1.46-1.46C15.03 4.46 13.57 4 12 4c-4.42 0-8 3.58-8 8H1l4 4 4-4H6z"/></svg>
+                                    點擊翻轉
+                                </div>
                             </div>
-                            <div class="card-item-title-box">
-                                <h4>${card.front}</h4>
-                                <p>${card.hint ? `音標/提示: [${card.hint}]` : '無發音提示'}</p>
+                            <!-- 背面 -->
+                            <div class="word-item-card-back glass-card border-glow">
+                                <span class="master-badge ${badgeClass}">${badgeText}</span>
+                                <div class="word-back-title">${card.front}</div>
+                                <div class="card-item-body">
+                                    <div class="definition-text">${card.back}</div>
+                                    ${card.example ? `<div class="example-text">例：${card.example}</div>` : ''}
+                                </div>
                             </div>
-                        </div>
-                        <div class="card-item-body">
-                            <div class="definition-text">${card.back}</div>
-                            ${card.example ? `<div class="example-text">例：${card.example}</div>` : ''}
                         </div>
                     `;
-                    listContainer.appendChild(cardDiv);
+                    
+                    sceneDiv.onclick = (e) => {
+                        const target = e.target;
+                        if (target.closest('button') || target.closest('a')) return;
+                        sceneDiv.querySelector('.word-item-card-inner').classList.toggle('flipped');
+                    };
+
+                    listContainer.appendChild(sceneDiv);
                 });
             });
         });
@@ -4278,7 +4299,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('cards-search').oninput = (e) => {
         const query = e.target.value.toLowerCase().trim();
-        const wordCards = document.querySelectorAll('#deck-cards-list .word-item-card');
+        const wordCards = document.querySelectorAll('#deck-cards-list .word-item-card-scene');
         
         wordCards.forEach(card => {
             const front = card.querySelector('h4').textContent.toLowerCase();
@@ -4286,7 +4307,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const example = card.querySelector('.example-text')?.textContent.toLowerCase() || '';
             
             if (front.includes(query) || back.includes(query) || example.includes(query)) {
-                card.style.display = 'flex';
+                card.style.display = '';
             } else {
                 card.style.display = 'none';
             }
