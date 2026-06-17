@@ -1383,6 +1383,8 @@ textarea:focus {
     height: 380px;
     margin: 1rem auto 2rem auto;
     perspective: 1500px; /* 3D 景深 */
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .flashcard-wrapper {
@@ -1415,6 +1417,18 @@ textarea:focus {
     text-align: center;
     border: 2px solid var(--border-glass) !important;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25) !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* 左右拖曳時的微光發光提示 */
+.flashcard-wrapper.swipe-right .flashcard-face {
+    border-color: rgba(0, 242, 195, 0.6) !important;
+    box-shadow: 0 15px 35px rgba(0, 242, 195, 0.25), 0 0 15px rgba(0, 242, 195, 0.15) !important;
+}
+
+.flashcard-wrapper.swipe-left .flashcard-face {
+    border-color: rgba(244, 63, 94, 0.6) !important;
+    box-shadow: 0 15px 35px rgba(244, 63, 94, 0.25), 0 0 15px rgba(244, 63, 94, 0.15) !important;
 }
 
 .flashcard-front {

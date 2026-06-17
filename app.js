@@ -572,20 +572,17 @@ const ImageEngine = {
                 }
             } catch (err) {
                 console.error(`Attempt ${attempt} failed for [${term}]:`, err);
-                if (attempt === maxRetries && base64) {
-                    return base64;
-                }
             }
         }
         
-        return base64;
+        return null;
     },
 
     // 呼叫 Gemini Vision API 進行多模態審查
     async verifyWithGemini(apiKey, term, definition, base64DataUrl) {
         try {
             const base64Parts = base64DataUrl.split(',');
-            if (base64Parts.length < 2) return true;
+            if (base64Parts.length < 2) return false;
             const mimeType = base64Parts[0].match(/:(.*?);/)[1];
             const base64Data = base64Parts[1];
             
@@ -629,7 +626,7 @@ Answer exactly "YES" or "NO" in capital letters. Do not write any other words.`;
             
             if (!response.ok) {
                 console.warn('Gemini API request failed:', response.status, await response.text());
-                return true;
+                return false;
             }
             
             const data = await response.json();
@@ -637,7 +634,7 @@ Answer exactly "YES" or "NO" in capital letters. Do not write any other words.`;
             return text === 'YES';
         } catch (e) {
             console.error('Gemini verification error:', e);
-            return true;
+            return false;
         }
     }
 };
@@ -874,10 +871,33 @@ const EditorManager = {
                     }
                     img.src = base64;
                 }
+            } else {
+                // 如果 AI 搜尋不到適合的圖片，清空並恢復預設無圖狀態
+                row.image = null;
+                const thumbnail = document.getElementById(`preview-thumbnail-${rowId}`);
+                if (thumbnail) {
+                    const img = thumbnail.querySelector('img');
+                    if (img) img.remove();
+                    
+                    let tip = thumbnail.querySelector('.no-image-tip');
+                    if (!tip) {
+                        tip = document.createElement('div');
+                        tip.className = 'no-image-tip';
+                        tip.style.width = '100%';
+                        tip.style.height = '100%';
+                        tip.style.display = 'flex';
+                        tip.style.alignItems = 'center';
+                        tip.style.justifyContent = 'center';
+                        tip.style.background = 'rgba(255,255,255,0.03)';
+                        tip.style.color = 'var(--text-muted)';
+                        tip.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>';
+                        thumbnail.insertBefore(tip, thumbnail.firstChild);
+                    }
+                }
+                alert(`⚠️ AI 未能為 [${term}] 找到或驗證符合字意的適合圖片，已取消圖片配對。`);
             }
         } catch (err) {
             console.error('AI 配圖失敗: ', err);
-            // 失敗時，若 Autopilot 在跑就不打擾，若是手動點擊則警告
             if (type === 'generate') {
                 alert('AI 生成此單詞插圖超時，請重新點擊嘗試，或點擊「AI 搜圖」讀取真實攝影。');
             }
@@ -1942,18 +1962,21 @@ const StudySessionManager = {
             if (state.soundEnabled) SoundFX.playSuccess(); // 已掌握播放清脆短音
         }
 
-        // 4. 觸發 Tinder 左右滑動飛出動畫
+        // 4. 觸發 Tinder 左右滑動飛出動畫 (改用優雅流暢的 inline transition 避免 keyframe 起始位置跳變)
         const scene = document.getElementById('interactive-card-scene');
         const previewEl = document.getElementById('flashcard-next-preview');
         
+        scene.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease';
+        scene.style.pointerEvents = 'none';
         if (mastered) {
-            scene.classList.add('slide-right');
+            scene.style.transform = 'translate(600px, 50px) rotate(20deg)';
         } else {
-            scene.classList.add('slide-left');
+            scene.style.transform = 'translate(-600px, 50px) rotate(-20deg)';
         }
+        scene.style.opacity = '0';
 
         // 同時讓預覽卡放大，增強層次過渡感
-        if (previewEl) {
+        if (previewEl && previewEl.style.display !== 'none') {
             previewEl.style.transform = 'scale(1) translateY(0px)';
             previewEl.style.opacity = '1';
         }
@@ -1973,9 +1996,11 @@ const StudySessionManager = {
             // 移至下一張卡片
             session.currentIndex++;
             
-            // 移除動畫與過渡樣式，讓場景與預覽歸位
-            scene.classList.remove('slide-left');
-            scene.classList.remove('slide-right');
+            // 重置樣式
+            scene.style.transition = '';
+            scene.style.transform = '';
+            scene.style.opacity = '';
+            scene.style.pointerEvents = '';
             if (previewEl) {
                 previewEl.style.transform = '';
                 previewEl.style.opacity = '';
@@ -1986,9 +2011,123 @@ const StudySessionManager = {
     },
 
     bindEvents() {
-        // 點擊卡片翻轉
+        const scene = document.getElementById('interactive-card-scene');
         const cardElement = document.getElementById('flashcard-element');
-        cardElement.onclick = () => this.flipCard();
+        
+        let startX = 0;
+        let startY = 0;
+        let deltaX = 0;
+        let deltaY = 0;
+        let isDragging = false;
+        
+        const updateDragVisuals = (dx) => {
+            if (dx > 10) {
+                cardElement.classList.add('swipe-right');
+                cardElement.classList.remove('swipe-left');
+            } else if (dx < -10) {
+                cardElement.classList.add('swipe-left');
+                cardElement.classList.remove('swipe-right');
+            } else {
+                cardElement.classList.remove('swipe-left', 'swipe-right');
+            }
+        };
+
+        const resetDragVisuals = () => {
+            cardElement.classList.remove('swipe-left', 'swipe-right');
+        };
+
+        const startDrag = (clientX, clientY) => {
+            // 如果目前正在飛出動畫中，禁止拖曳
+            if (scene.style.transition) return;
+            
+            isDragging = true;
+            startX = clientX;
+            startY = clientY;
+            deltaX = 0;
+            deltaY = 0;
+            scene.style.transition = 'none'; // 即時跟隨
+        };
+
+        const moveDrag = (clientX, clientY) => {
+            if (!isDragging) return;
+            deltaX = clientX - startX;
+            deltaY = clientY - startY;
+
+            // 限制最大拖曳位移與計算旋轉
+            const rotate = deltaX * 0.05; // 每移動 20px 旋轉 1 度
+            scene.style.transform = `translate(${deltaX}px, ${deltaY}px) rotate(${rotate}deg)`;
+            
+            updateDragVisuals(deltaX);
+        };
+
+        const endDrag = () => {
+            if (!isDragging) return;
+            isDragging = false;
+            
+            resetDragVisuals();
+
+            const threshold = 120; // 拖曳超過 120px 觸發評估
+            const clickThreshold = 8; // 移動小於 8px 視為單純點擊
+
+            if (Math.abs(deltaX) < clickThreshold && Math.abs(deltaY) < clickThreshold) {
+                // 視為點擊翻轉
+                this.flipCard();
+            } else if (deltaX > threshold) {
+                // 飛向右邊：已掌握
+                this.evaluate(true);
+            } else if (deltaX < -threshold) {
+                // 飛向左邊：需複習
+                this.evaluate(false);
+            } else {
+                // 未達門檻，平滑彈回原位
+                scene.style.transition = 'transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                scene.style.transform = 'translate(0px, 0px) rotate(0deg)';
+                setTimeout(() => {
+                    scene.style.transition = '';
+                }, 350);
+            }
+        };
+
+        // 綁定滑鼠事件
+        scene.onmousedown = (e) => {
+            // 排除點擊 TTS 按鈕等子元素
+            if (e.target.closest('button') || e.target.closest('a')) return;
+            e.preventDefault();
+            startDrag(e.clientX, e.clientY);
+        };
+
+        window.onmousemove = (e) => {
+            if (isDragging) {
+                moveDrag(e.clientX, e.clientY);
+            }
+        };
+
+        window.onmouseup = () => {
+            if (isDragging) {
+                endDrag();
+            }
+        };
+
+        // 綁定觸控事件
+        scene.ontouchstart = (e) => {
+            if (e.target.closest('button') || e.target.closest('a')) return;
+            const touch = e.touches[0];
+            startDrag(touch.clientX, touch.clientY);
+        };
+
+        scene.ontouchmove = (e) => {
+            if (isDragging) {
+                e.preventDefault(); // 阻止行動端拖曳卡片時頁面滾動
+                const touch = e.touches[0];
+                moveDrag(touch.clientX, touch.clientY);
+            }
+        };
+
+        scene.ontouchend = () => {
+            if (isDragging) {
+                endDrag();
+            }
+        };
 
         // 綁定「正面是意思」開關變更事件
         document.getElementById('toggle-def-front').onchange = () => {
