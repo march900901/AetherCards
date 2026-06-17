@@ -3484,22 +3484,29 @@ Do not return any markdown formatting (no \`\`\`json blocks), output only the ra
         }
 
         const data = await response.json();
-        let text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        const candidate = data.candidates?.[0];
+        
+        if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+            throw new Error(`AI 審查未完成 (原因: ${candidate.finishReason})，請調整句子後重試。`);
+        }
+        
+        let text = candidate?.content?.parts?.[0]?.text?.trim();
         if (!text) {
-            throw new Error('AI 回傳空結果');
+            throw new Error('AI 回傳空結果，請稍後重試。');
         }
 
-        // 清理可能被包裹的 Markdown json 區塊
-        if (text.startsWith("```json")) {
-            text = text.substring(7);
+        // 極度強健的 JSON 區塊定位器：尋找第一個 '{' 與最後一個 '}'
+        const startIdx = text.indexOf('{');
+        const endIdx = text.lastIndexOf('}');
+        if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+            text = text.substring(startIdx, endIdx + 1);
+        } else {
+            // 退路：清理可能被包裹的 Markdown 區塊
+            if (text.startsWith("```json")) text = text.substring(7);
+            if (text.startsWith("```")) text = text.substring(3);
+            if (text.endsWith("```")) text = text.substring(0, text.length - 3);
+            text = text.trim();
         }
-        if (text.startsWith("```")) {
-            text = text.substring(3);
-        }
-        if (text.endsWith("```")) {
-            text = text.substring(0, text.length - 3);
-        }
-        text = text.trim();
 
         try {
             return JSON.parse(text);
