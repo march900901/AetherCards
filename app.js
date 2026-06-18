@@ -3465,7 +3465,7 @@ Do not return any markdown formatting (no \`\`\`json blocks), output only the ra
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
                 responseMimeType: "application/json",
-                maxOutputTokens: 250,
+                maxOutputTokens: 800,
                 temperature: 0.1
             }
         };
